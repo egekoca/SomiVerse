@@ -37,6 +37,13 @@ export class ZoneManager {
     this.addZone(-dist, -dist, hubSize, hubSize);  // Sol üst - LEND
     this.addZone(dist, dist, hubSize, hubSize);    // Sağ alt - MINT
     this.addZone(-dist, dist, hubSize, hubSize);   // Sol alt - CLAIM
+
+    // -- BILLBOARD ALANLARI --
+    // 3 büyük reklam panosu
+    const billboardSize = 30;
+    this.addZone(0, -70, billboardSize, billboardSize);    // North
+    this.addZone(75, 0, billboardSize, billboardSize);     // East
+    this.addZone(-75, 0, billboardSize, billboardSize);    // West
   }
 
   addZone(x, z, w, d) {

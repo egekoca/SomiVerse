@@ -15,6 +15,7 @@ import { StreetLights } from './world/StreetLights.js';
 import { Highways } from './world/Highways.js';
 import { BackgroundCity } from './world/BackgroundCity.js';
 import { ZoneManager } from './world/ZoneManager.js';
+import { Billboards } from './world/Billboards.js';
 
 // Systems
 import { InputSystem } from './systems/InputSystem.js';
@@ -57,12 +58,14 @@ export class Game {
     this.buildings = [];
     this.zoneManager = null;
     this.highways = null;
+    this.billboards = null;
     
     this.inputSystem = null;
     this.interactionSystem = null;
     
     this.isRunning = false;
     this.animationId = null;
+    this.clock = new THREE.Clock();
   }
 
   async init() {
@@ -75,7 +78,7 @@ export class Game {
     this.zoneManager = new ZoneManager();
 
     // Create world
-    this.createWorld();
+    await this.createWorld();
 
     // Create player
     this.createPlayer();
@@ -114,7 +117,7 @@ export class Game {
     return this;
   }
 
-  createWorld() {
+  async createWorld() {
     const scene = this.sceneManager.getScene();
 
     // City base
@@ -128,6 +131,10 @@ export class Game {
 
     // Background buildings
     new BackgroundCity(scene, this.zoneManager.getOccupiedZones());
+
+    // LED Billboards
+    this.billboards = new Billboards(scene);
+    await this.billboards.create();
 
     // Interactive buildings
     this.createInteractiveBuildings();
@@ -215,6 +222,8 @@ export class Game {
     if (!this.isRunning) return;
     
     this.animationId = requestAnimationFrame(() => this.animate());
+    
+    const deltaTime = this.clock.getDelta();
 
     // Update player movement
     this.updatePlayer();
@@ -222,6 +231,11 @@ export class Game {
     // Update highway cars
     if (this.highways) {
       this.highways.update();
+    }
+
+    // Update billboards
+    if (this.billboards) {
+      this.billboards.update(deltaTime);
     }
 
     // Update building animations
