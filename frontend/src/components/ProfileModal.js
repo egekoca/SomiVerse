@@ -66,19 +66,19 @@ export class ProfileModal {
             <div class="profile-section">
               <div class="section-title">STATS</div>
               <div class="stats-grid">
-                <div class="stat-item">
+                <div class="stat-item stat-swap">
                   <span class="stat-value swaps-count">0</span>
                   <span class="stat-label">SWAPS</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item stat-lend">
                   <span class="stat-value lending-count">0</span>
                   <span class="stat-label">LENDING</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item stat-mint">
                   <span class="stat-value minted-count">0</span>
                   <span class="stat-label">MINTED</span>
                 </div>
-                <div class="stat-item">
+                <div class="stat-item stat-faucet">
                   <span class="stat-value faucet-count">0</span>
                   <span class="stat-label">CLAIMS</span>
                 </div>

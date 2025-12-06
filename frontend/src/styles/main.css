@@ -604,6 +604,11 @@ body {
   padding: 12px 8px;
   background: rgba(0, 0, 0, 0.3);
   border: 1px solid rgba(255, 255, 255, 0.1);
+  transition: all 0.2s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-2px);
 }
 
 .stat-value {
@@ -620,6 +625,71 @@ body {
   color: #666;
   letter-spacing: 1px;
   margin-top: 4px;
+}
+
+/* Stat colors matching buildings */
+.stat-swap {
+  border-color: rgba(0, 170, 255, 0.4);
+  background: rgba(0, 170, 255, 0.08);
+}
+.stat-swap .stat-value {
+  color: #00aaff;
+  text-shadow: 0 0 15px rgba(0, 170, 255, 0.6);
+}
+.stat-swap .stat-label {
+  color: #0088cc;
+}
+.stat-swap:hover {
+  border-color: #00aaff;
+  box-shadow: 0 0 15px rgba(0, 170, 255, 0.3);
+}
+
+.stat-lend {
+  border-color: rgba(255, 0, 102, 0.4);
+  background: rgba(255, 0, 102, 0.08);
+}
+.stat-lend .stat-value {
+  color: #ff0066;
+  text-shadow: 0 0 15px rgba(255, 0, 102, 0.6);
+}
+.stat-lend .stat-label {
+  color: #cc0055;
+}
+.stat-lend:hover {
+  border-color: #ff0066;
+  box-shadow: 0 0 15px rgba(255, 0, 102, 0.3);
+}
+
+.stat-mint {
+  border-color: rgba(0, 255, 136, 0.4);
+  background: rgba(0, 255, 136, 0.08);
+}
+.stat-mint .stat-value {
+  color: #00ff88;
+  text-shadow: 0 0 15px rgba(0, 255, 136, 0.6);
+}
+.stat-mint .stat-label {
+  color: #00cc66;
+}
+.stat-mint:hover {
+  border-color: #00ff88;
+  box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+}
+
+.stat-faucet {
+  border-color: rgba(255, 170, 0, 0.4);
+  background: rgba(255, 170, 0, 0.08);
+}
+.stat-faucet .stat-value {
+  color: #ffaa00;
+  text-shadow: 0 0 15px rgba(255, 170, 0, 0.6);
+}
+.stat-faucet .stat-label {
+  color: #cc8800;
+}
+.stat-faucet:hover {
+  border-color: #ffaa00;
+  box-shadow: 0 0 15px rgba(255, 170, 0, 0.3);
 }
 
 .nft-section {
