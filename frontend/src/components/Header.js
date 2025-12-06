@@ -31,30 +31,34 @@ export class Header {
       </div>
       
       <div class="header-center">
-        <button class="profile-link hidden" id="header-profile">
-          MY PROFILE
-        </button>
       </div>
       
       <div class="header-right">
         <div class="xp-display hidden" id="header-xp">
-          <span class="xp-icon">⚡</span>
-          <span class="xp-amount">0</span>
-          <span class="xp-label">XP</span>
+          <div class="level-badge">
+            <span class="level-num">LEVEL 1</span>
+          </div>
+          <div class="xp-details">
+            <div class="xp-bar-container">
+              <div class="xp-bar-fill" style="width: 0%"></div>
+            </div>
+            <span class="xp-text">0 / 100 XP</span>
+          </div>
         </div>
         
         <div class="wallet-section">
-          <button class="header-btn connect-btn" id="header-connect">
-            CONNECT WALLET
+          <button class="wallet-button" id="header-connect">
+            <span class="wallet-text">CONNECT WALLET</span>
           </button>
           
           <div class="wallet-connected hidden" id="header-wallet-info">
-            <div class="wallet-address-btn" id="wallet-toggle">
+            <div class="wallet-info-btn" id="wallet-toggle">
               <span class="wallet-dot">●</span>
               <span class="wallet-addr"></span>
               <span class="wallet-arrow">▼</span>
             </div>
             <div class="wallet-dropdown hidden">
+              <button class="dropdown-item" id="header-profile-item">MY PROFILE</button>
               <button class="dropdown-item disconnect-btn">DISCONNECT</button>
             </div>
           </div>
@@ -74,8 +78,8 @@ export class Header {
     // Disconnect
     this.element.querySelector('.disconnect-btn').addEventListener('click', () => this.handleDisconnect());
     
-    // My Profile
-    this.element.querySelector('#header-profile').addEventListener('click', () => this.openProfile());
+    // My Profile (in dropdown)
+    this.element.querySelector('#header-profile-item').addEventListener('click', () => this.openProfile());
     
     // Close dropdown on outside click
     document.addEventListener('click', (e) => {
@@ -152,15 +156,20 @@ export class Header {
     }
   }
 
-  setConnected(account) {
+  async setConnected(account) {
+    if (this.isConnected && this.account === account) return;
+
     this.isConnected = true;
     this.account = account;
 
     // Update UI
     this.element.querySelector('#header-connect').classList.add('hidden');
+    
+    const xpDisplay = this.element.querySelector('#header-xp');
+    if (xpDisplay) xpDisplay.classList.remove('hidden');
+
     this.element.querySelector('#header-wallet-info').classList.remove('hidden');
-    this.element.querySelector('#header-profile').classList.remove('hidden');
-    this.element.querySelector('#header-xp').classList.remove('hidden');
+    // this.element.querySelector('#header-profile').classList.remove('hidden'); (Moved to dropdown)
     
     // Short address
     const shortAddr = `${account.slice(0, 6)}...${account.slice(-4)}`;
@@ -185,9 +194,22 @@ export class Header {
 
     // Update UI
     this.element.querySelector('#header-connect').classList.remove('hidden');
+    
+    // Ensure XP display is hidden and cleaned up
+    const xpDisplay = this.element.querySelector('#header-xp');
+    if (xpDisplay) {
+      xpDisplay.classList.add('hidden');
+      // Optional: Reset text to avoid showing stale data if reconnected
+      const levelNum = this.element.querySelector('.level-num');
+      const xpText = this.element.querySelector('.xp-text');
+      const xpBar = this.element.querySelector('.xp-bar-fill');
+      if (levelNum) levelNum.textContent = 'LEVEL 1';
+      if (xpText) xpText.textContent = '0 / 100 XP';
+      if (xpBar) xpBar.style.width = '0%';
+    }
+    
     this.element.querySelector('#header-wallet-info').classList.add('hidden');
-    this.element.querySelector('#header-profile').classList.add('hidden');
-    this.element.querySelector('#header-xp').classList.add('hidden');
+    // this.element.querySelector('#header-profile').classList.add('hidden'); (Moved to dropdown)
 
     ProfileService.clearCurrentProfile();
 
@@ -231,7 +253,22 @@ export class Header {
   updateXP(xp, level) {
     this.xp = xp;
     this.level = level;
-    this.element.querySelector('.xp-amount').textContent = xp;
+
+    // Calculate progress
+    const startXP = level * (level - 1) * 50;
+    const endXP = (level + 1) * level * 50;
+    const totalNeeded = endXP - startXP;
+    const currentProgress = xp - startXP;
+    const percentage = Math.min(100, Math.max(0, (currentProgress / totalNeeded) * 100));
+
+    // Update DOM
+    const levelNum = this.element.querySelector('.level-num');
+    const xpBar = this.element.querySelector('.xp-bar-fill');
+    const xpText = this.element.querySelector('.xp-text');
+
+    if (levelNum) levelNum.textContent = `LEVEL ${level}`;
+    if (xpBar) xpBar.style.width = `${percentage}%`;
+    if (xpText) xpText.textContent = `${Math.floor(currentProgress)} / ${totalNeeded} XP`;
   }
 
   getAccount() {

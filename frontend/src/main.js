@@ -9,7 +9,7 @@ import { Game } from './game/Game.js';
 import { Loader } from './components/Loader.js';
 import { Modal } from './components/Modal.js';
 import { ActionButton } from './components/ActionButton.js';
-import { WalletButton } from './components/WalletButton.js';
+import { Header } from './components/Header.js';
 import { ProfileModal } from './components/ProfileModal.js';
 import { ProfileService } from './services/ProfileService.js';
 
@@ -19,7 +19,7 @@ async function main() {
   const modal = new Modal();
   const actionButton = new ActionButton();
   const profileModal = new ProfileModal();
-  const walletButton = new WalletButton(profileModal);
+  const header = new Header(profileModal);
 
   // Initialize game
   const game = new Game({
@@ -48,7 +48,7 @@ async function main() {
 
   // Global access for debugging
   window.game = game;
-  window.wallet = walletButton;
+  window.header = header;
   window.profile = ProfileService;
 }
 

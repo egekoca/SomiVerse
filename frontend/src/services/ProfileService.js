@@ -151,7 +151,8 @@ class ProfileServiceClass {
   
   // Helpers for calculations (Client side prediction if needed, but truth is on server)
   getXPForNextLevel(currentLevel) {
-    return (currentLevel + 1) * currentLevel * 50;
+    const lvl = parseInt(currentLevel);
+    return (lvl + 1) * lvl * 50;
   }
 }
 

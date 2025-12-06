@@ -55,11 +55,13 @@ export class ProfileModal {
               <div class="section-title">LEVEL & XP</div>
               <div class="level-display">
                 <div class="level-badge">LVL <span class="level-number">1</span></div>
-                <div class="xp-bar-container">
-                  <div class="xp-bar">
-                    <div class="xp-fill"></div>
+                <div class="xp-bar-wrapper">
+                  <div class="xp-bar-container">
+                    <div class="xp-bar">
+                      <div class="xp-fill"></div>
+                    </div>
                   </div>
-                  <div class="xp-text"><span class="current-xp">0</span> / <span class="next-level-xp">100</span> XP</div>
+                  <div class="xp-text"><span class="next-level-xp">0 / 100 XP</span></div>
                 </div>
               </div>
             </div>
@@ -163,18 +165,29 @@ export class ProfileModal {
     this.element.querySelector('.wallet-full-address').textContent = profile.wallet_address || profile.displayAddress;
     
     // Level & XP
-    this.element.querySelector('.level-number').textContent = profile.level;
-    this.element.querySelector('.current-xp').textContent = profile.xp;
+    const level = parseInt(profile.level);
+    const xp = parseInt(profile.xp);
     
-    const nextLevelXP = ProfileService.getXPForNextLevel(profile.level);
-    const prevLevelXP = profile.level > 1 ? ProfileService.getXPForNextLevel(profile.level - 1) : 0;
+    this.element.querySelector('.level-number').textContent = level;
+    // this.element.querySelector('.current-xp').textContent = xp; // Removed old elem
+    
+    const nextLevelXP = ProfileService.getXPForNextLevel(level);
+    const prevLevelXP = level > 1 ? ProfileService.getXPForNextLevel(level - 1) : 0;
     
     // Prevent division by zero
     const totalRange = nextLevelXP - prevLevelXP;
-    const progress = totalRange > 0 ? ((profile.xp - prevLevelXP) / totalRange) * 100 : 0;
+    const currentProgress = xp - prevLevelXP;
+    const progress = totalRange > 0 ? (currentProgress / totalRange) * 100 : 0;
     
-    this.element.querySelector('.next-level-xp').textContent = nextLevelXP;
-    this.element.querySelector('.xp-fill').style.width = `${Math.min(Math.max(progress, 0), 100)}%`;
+    const nextLevelElem = this.element.querySelector('.next-level-xp');
+    if (nextLevelElem) {
+      nextLevelElem.textContent = `${Math.floor(currentProgress)} / ${totalRange} XP`;
+    }
+    
+    const xpFill = this.element.querySelector('.xp-fill');
+    if (xpFill) {
+      xpFill.style.width = `${Math.min(Math.max(progress, 0), 100)}%`;
+    }
     
     // Stats
     if (profile.stats) {

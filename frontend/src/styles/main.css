@@ -1304,3 +1304,801 @@ body {
   background: rgba(0, 255, 204, 0.2);
   text-shadow: 0 0 10px #00ffcc;
 }
+
+/* Header XP & Level Display */
+.xp-display {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: 20px;
+  background: rgba(0, 0, 0, 0.4);
+  padding: 5px 15px;
+  border-radius: 8px;
+  border: 1px solid rgba(0, 255, 204, 0.2);
+}
+
+.level-badge {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 255, 204, 0.1);
+  border: 1px solid var(--theme-color);
+  border-radius: 4px;
+  padding: 2px 8px;
+  min-width: 40px;
+}
+
+.level-label {
+  font-size: 0.6rem;
+  color: var(--theme-color);
+  font-family: 'Share Tech Mono', monospace;
+}
+
+.level-num {
+  font-size: 1.2rem;
+  font-weight: bold;
+  color: #fff;
+  line-height: 1;
+}
+
+.xp-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.xp-bar-container {
+  width: 120px;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: var(--theme-color);
+  box-shadow: 0 0 5px var(--theme-color);
+  transition: width 0.3s ease;
+}
+
+.xp-text {
+  font-size: 0.7rem;
+  color: #aaa;
+  font-family: 'Share Tech Mono', monospace;
+  text-align: center;
+}
+
+/* Header Layout */
+#game-header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 70px;
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid rgba(0, 255, 204, 0.2);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 30px;
+  z-index: 1000;
+  pointer-events: auto;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+}
+
+.header-logo {
+  height: 40px;
+  width: auto;
+  filter: drop-shadow(0 0 5px var(--theme-color));
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+}
+
+.wallet-section {
+  position: relative;
+}
+
+.header-btn {
+  background: rgba(0, 255, 204, 0.1);
+  border: 1px solid var(--theme-color);
+  color: var(--theme-color);
+  padding: 10px 20px;
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  clip-path: polygon(10% 0, 100% 0, 100% 70%, 90% 100%, 0 100%, 0 30%);
+}
+
+.header-btn:hover {
+  background: var(--theme-color);
+  color: #000;
+}
+
+.wallet-connected {
+  position: relative;
+}
+
+.wallet-address-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: rgba(0, 0, 0, 0.8);
+  border: 1px solid var(--theme-color);
+  padding: 8px 15px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+  color: #fff;
+}
+
+.wallet-dot {
+  color: #0f0;
+  text-shadow: 0 0 5px #0f0;
+}
+
+.wallet-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 10px;
+  background: rgba(0, 0, 0, 0.9);
+  border: 1px solid var(--theme-color);
+  border-radius: 4px;
+  padding: 5px;
+  min-width: 150px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dropdown-item {
+  background: transparent;
+  border: none;
+  color: #fff;
+  padding: 10px;
+  text-align: left;
+  cursor: pointer;
+  font-family: 'Share Tech Mono', monospace;
+  transition: background 0.3s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 204, 0.2);
+  color: var(--theme-color);
+}
+
+.profile-link {
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-family: 'Orbitron', sans-serif;
+  font-size: 1.1rem;
+  cursor: pointer;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  transition: all 0.3s ease;
+}
+
+.profile-link:hover {
+  color: var(--theme-color);
+  text-shadow: 0 0 10px var(--theme-color);
+}
+
+.hidden {
+  display: none !important;
+}
+
+/* Header Redesign Overrides */
+#game-header {
+  background: transparent !important;
+  border-bottom: none !important;
+  backdrop-filter: none !important;
+}
+
+/* Restore Wallet Button Styles */
+.header-btn.connect-btn {
+  /* Hide the new style if it conflicts, but we changed the class in JS to .wallet-button */
+}
+
+/* New XP Display Style to match Wallet Button */
+.xp-display {
+  background: linear-gradient(135deg, rgba(170, 0, 255, 0.2), rgba(255, 0, 102, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 4px; /* Match button border-radius if any, or use default */
+  padding: 8px 15px;
+  box-shadow: 0 0 10px rgba(170, 0, 255, 0.1);
+  clip-path: polygon(10px 0, 100% 0, 100% calc(100% - 10px), calc(100% - 10px) 100%, 0 100%, 0 10px); /* Match clip-path */
+}
+
+.level-badge {
+  border-color: rgba(255, 255, 255, 0.3);
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.xp-bar-container {
+  background: rgba(0, 0, 0, 0.5);
+}
+
+/* Ensure wallet connected info matches old style */
+.wallet-info-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 24px; /* Match .wallet-button padding */
+  background: linear-gradient(135deg, rgba(170, 0, 255, 0.2), rgba(255, 0, 102, 0.2));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px);
+  font-family: 'Orbitron', sans-serif; /* Use font from wallet button if applicable */
+  letter-spacing: 1px;
+}
+
+.wallet-info-btn:hover {
+  background: linear-gradient(135deg, rgba(170, 0, 255, 0.4), rgba(255, 0, 102, 0.4));
+  border-color: #ff0066;
+  box-shadow: 0 0 20px rgba(170, 0, 255, 0.5), 0 0 40px rgba(255, 0, 102, 0.3);
+}
+
+/* Final Header Adjustments */
+.header-logo {
+  filter: drop-shadow(0 0 10px #ff0000) !important;
+}
+
+.wallet-button, .header-btn, .wallet-info-btn, .xp-display {
+  background: linear-gradient(135deg, rgba(170, 0, 255, 0.2), rgba(255, 0, 102, 0.2)) !important;
+  border: 1px solid rgba(255, 0, 102, 0.5) !important;
+  clip-path: polygon(15px 0, 100% 0, 100% calc(100% - 15px), calc(100% - 15px) 100%, 0 100%, 0 15px) !important;
+  box-shadow: 0 0 10px rgba(255, 0, 102, 0.1) !important;
+  font-family: 'Orbitron', sans-serif !important;
+  letter-spacing: 1px !important;
+  color: #fff !important;
+}
+
+.wallet-button:hover, .header-btn:hover, .wallet-info-btn:hover {
+  background: linear-gradient(135deg, rgba(170, 0, 255, 0.4), rgba(255, 0, 102, 0.4)) !important;
+  border-color: #ff0066 !important;
+  box-shadow: 0 0 20px rgba(170, 0, 255, 0.5), 0 0 40px rgba(255, 0, 102, 0.3) !important;
+  transform: translateY(-2px);
+}
+
+.wallet-dot {
+  color: #00ff00 !important;
+  text-shadow: 0 0 5px #00ff00 !important;
+}
+
+.xp-display {
+  border-radius: 0 !important; /* Override border-radius to match clip-path style */
+}
+
+/* XP Display Polish */
+.level-badge {
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.level-num {
+  font-family: 'Orbitron', sans-serif !important;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+}
+
+.level-label {
+  display: none; /* Hide "LVL" text to make it cleaner if desired, or just style it */
+}
+
+.xp-bar-container {
+  background: rgba(0, 0, 0, 0.8) !important;
+  border: 1px solid rgba(255, 0, 102, 0.3);
+  box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.8);
+}
+
+.xp-bar-fill {
+  background: linear-gradient(90deg, #aa00ff, #ff0066) !important;
+  box-shadow: 0 0 10px #ff0066 !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Add a 'shine' effect to the bar */
+.xp-bar-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent);
+  transform: translateX(-100%);
+  animation: shine 2s infinite;
+}
+
+@keyframes shine {
+  100% { transform: translateX(100%); }
+}
+
+.xp-text {
+  color: rgba(255, 255, 255, 0.7) !important;
+  font-size: 10px !important;
+  letter-spacing: 1px !important;
+}
+
+/* === GREEN TECH OVERRIDES (Second Screenshot Style) === */
+
+/* Reset previous pink/purple overrides */
+.wallet-button, .header-btn, .wallet-info-btn, .xp-display {
+  background: rgba(0, 20, 10, 0.8) !important; /* Dark background */
+  border: 1px solid #00ff99 !important; /* Neon Green Border */
+  box-shadow: none !important;
+  color: #00ff99 !important; /* Green Text */
+  font-family: 'Orbitron', sans-serif !important;
+  letter-spacing: 2px !important;
+  text-transform: uppercase !important;
+  
+  /* Polygon Shape */
+  clip-path: polygon(
+    10px 0, 
+    100% 0, 
+    100% calc(100% - 10px), 
+    calc(100% - 10px) 100%, 
+    0 100%, 
+    0 10px
+  ) !important;
+  
+  /* Sizing Equality */
+  height: 46px !important;
+  display: flex !important;
+  align-items: center !important;
+  padding: 0 20px !important;
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+/* Hover Effects */
+.wallet-button:hover, .header-btn:hover, .wallet-info-btn:hover {
+  background: rgba(0, 255, 153, 0.1) !important;
+  box-shadow: 0 0 15px rgba(0, 255, 153, 0.3) !important;
+  transform: translateY(-1px);
+  color: #fff !important;
+  border-color: #fff !important;
+}
+
+/* XP Display Specifics */
+.xp-display {
+  gap: 15px !important;
+  margin-right: 15px !important;
+}
+
+/* Level Text */
+.level-num {
+  color: #00ff99 !important;
+  font-size: 14px !important;
+  font-weight: bold !important;
+  text-shadow: 0 0 5px rgba(0, 255, 153, 0.5) !important;
+  white-space: nowrap !important;
+}
+
+/* XP Progress Bar */
+.xp-details {
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: center !important;
+  gap: 4px !important;
+  width: 140px !important; /* Fixed width for bar */
+}
+
+.xp-bar-container {
+  height: 6px !important;
+  background: rgba(0, 50, 30, 0.8) !important;
+  border: 1px solid rgba(0, 255, 153, 0.3) !important;
+  border-radius: 0 !important; /* Sharp edges */
+}
+
+.xp-bar-fill {
+  background: #00ff99 !important;
+  box-shadow: 0 0 8px #00ff99 !important;
+}
+
+/* XP Text */
+.xp-text {
+  color: rgba(0, 255, 153, 0.7) !important;
+  font-size: 9px !important;
+  text-align: right !important;
+  font-family: 'Share Tech Mono', monospace !important;
+}
+
+/* Wallet Specifics */
+.wallet-dot {
+  color: #00ff99 !important;
+  text-shadow: 0 0 5px #00ff99 !important;
+  font-size: 12px !important;
+  margin-right: 8px !important;
+}
+
+.wallet-addr {
+  color: inherit !important;
+}
+
+.wallet-arrow {
+  color: rgba(0, 255, 153, 0.7) !important;
+  font-size: 10px !important;
+  margin-left: 8px !important;
+}
+
+/* Dropdown Menu Matching Style */
+.wallet-dropdown {
+  background: rgba(0, 20, 10, 0.95) !important;
+  border: 1px solid #00ff99 !important;
+  border-radius: 0 !important;
+  margin-top: 5px !important;
+  clip-path: none !important; /* Dropdown is usually rectangle */
+}
+
+.dropdown-item {
+  color: #00ff99 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 12px !important;
+  padding: 12px 15px !important;
+}
+
+.dropdown-item:hover {
+  background: rgba(0, 255, 153, 0.2) !important;
+  color: #fff !important;
+}
+
+
+/* === POLISHED WIDTH & VISIBILITY FIXES === */
+
+/* 1. Fix XP Display Width & Layout */
+.xp-display {
+  width: 250px !important; /* Reduced width to look less stretched */
+  justify-content: space-between !important; /* Spread content evenly */
+  padding: 0 15px !important;
+  margin-right: 10px !important;
+}
+
+/* 2. Ensure only connected users see the XP box (already handled by .hidden class but enforcing display:flex when visible) */
+.xp-display:not(.hidden) {
+  display: flex !important;
+}
+
+/* 3. Fix Button Appearance to be perfect rectangles with cut corners */
+.wallet-button, .header-btn, .wallet-info-btn, .xp-display {
+  /* Ensure shapes match perfectly */
+  height: 42px !important; /* Slightly shorter for sleeker look */
+  box-sizing: border-box !important;
+  
+  /* Clean up the polygon clip */
+  clip-path: polygon(
+    10px 0, 
+    100% 0, 
+    100% calc(100% - 10px), 
+    calc(100% - 10px) 100%, 
+    0 100%, 
+    0 10px
+  ) !important;
+}
+
+/* 4. Text Adjustments */
+.level-num {
+  font-size: 12px !important;
+  letter-spacing: 1px !important;
+}
+
+.xp-details {
+  width: 120px !important; /* Fixed width for progress bar section */
+}
+
+/* 5. Connect Wallet Button Specifics */
+.header-btn.connect-btn {
+  min-width: 180px !important;
+  justify-content: center !important;
+}
+
+/* === CRITICAL FIX: HIDE CONNECT BUTTON WHEN CONNECTED === */
+/* This enforces hiding with the highest specificity possible */
+#game-header .wallet-section .wallet-button.hidden,
+#header-connect.hidden,
+button#header-connect.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  position: absolute !important;
+  width: 0 !important;
+  height: 0 !important;
+}
+
+/* === CRITICAL FIX: HIDE XP DISPLAY WHEN DISCONNECTED === */
+.xp-display.hidden,
+#header-xp.hidden {
+  display: none !important;
+  visibility: hidden !important;
+  opacity: 0 !important;
+  position: absolute !important;
+  pointer-events: none !important;
+  z-index: -1 !important;
+}
+
+/* === FINAL LEVEL & XP VISIBILITY POLISH === */
+
+/* 1. Change Level Text Color to Neon Purple/Red as requested */
+.level-num {
+  color: #ff0066 !important; /* Neon Red/Pink */
+  text-shadow: 0 0 5px #ff0066, 0 0 10px #ff0066 !important;
+}
+
+/* 2. Fix XP Progress Bar Visibility */
+.xp-bar-fill {
+  background: linear-gradient(90deg, #aa00ff, #ff0066) !important; /* Gradient for visibility */
+  box-shadow: 0 0 8px #ff0066 !important;
+  opacity: 1 !important;
+  display: block !important;
+  min-height: 100% !important;
+}
+
+/* Ensure container has a background so empty bar is visible */
+.xp-bar-container {
+  background: rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(255, 0, 102, 0.3) !important;
+}
+
+/* 3. Ensure Connect Wallet stays Green */
+.wallet-button .wallet-text {
+  color: #00ff99 !important;
+  text-shadow: 0 0 5px #00ff99 !important;
+}
+
+/* 4. Profile Modal Stats - Ensure they are readable */
+.stat-value {
+  color: #00ff99 !important;
+  font-family: 'Orbitron', sans-serif;
+}
+
+.stat-label {
+  color: #aaa;
+  font-size: 0.7rem;
+}
+
+/* === HEADER & PROFILE COLOR POLISH === */
+
+/* 1. Profile Modal Stats - Specific Colors per Building */
+/* Override previous generic colors */
+.stat-value, .stat-label {
+  color: inherit !important; /* Reset to inherit from specific classes below */
+}
+
+/* SWAP: Cyan/Blue */
+.stat-swap {
+  border-color: #00aaff !important;
+  box-shadow: 0 0 5px rgba(0, 170, 255, 0.3);
+}
+.stat-swap .stat-value {
+  color: #00aaff !important;
+  text-shadow: 0 0 10px rgba(0, 170, 255, 0.6) !important;
+}
+
+/* LENDING: Pink/Red */
+.stat-lend {
+  border-color: #ff0066 !important;
+  box-shadow: 0 0 5px rgba(255, 0, 102, 0.3);
+}
+.stat-lend .stat-value {
+  color: #ff0066 !important;
+  text-shadow: 0 0 10px rgba(255, 0, 102, 0.6) !important;
+}
+
+/* MINTED: Green */
+.stat-mint {
+  border-color: #00ff99 !important;
+  box-shadow: 0 0 5px rgba(0, 255, 153, 0.3);
+}
+.stat-mint .stat-value {
+  color: #00ff99 !important;
+  text-shadow: 0 0 10px rgba(0, 255, 153, 0.6) !important;
+}
+
+/* CLAIMS: Orange/Gold */
+.stat-faucet {
+  border-color: #ffaa00 !important;
+  box-shadow: 0 0 5px rgba(255, 170, 0, 0.3);
+}
+.stat-faucet .stat-value {
+  color: #ffaa00 !important;
+  text-shadow: 0 0 10px rgba(255, 170, 0, 0.6) !important;
+}
+
+/* 2. Profile Modal - Level Bar Conflict Fix */
+/* Ensure profile modal's XP bar (pink/purple) is distinct and clear */
+.profile-section .xp-bar-container {
+  background: rgba(0, 0, 0, 0.5) !important;
+  border: 1px solid rgba(170, 0, 255, 0.3) !important;
+  height: 8px !important;
+  margin-bottom: 5px !important;
+}
+
+.profile-section .xp-fill {
+  background: linear-gradient(90deg, #aa00ff, #ff00cc) !important;
+  box-shadow: 0 0 10px #aa00ff !important;
+  height: 100% !important;
+}
+
+.profile-section .level-badge {
+  color: #ff00cc !important;
+  text-shadow: 0 0 8px #ff00cc !important;
+}
+
+/* 3. Header XP Box - Text Colors Override */
+/* Make Level text Purple/Pink, keep XP text green/tech */
+#header-xp .level-num {
+  color: #ff0066 !important; /* Red/Pink */
+  text-shadow: 0 0 8px #ff0066 !important;
+}
+
+#header-xp .xp-text {
+  color: #00ff99 !important; /* Green Tech */
+  text-shadow: none !important;
+}
+
+/* 4. Header Box Borders - Match Connect Wallet Green */
+#header-xp.xp-display {
+  border-color: #00ff99 !important; /* Green Border */
+}
+
+/* But keep the progress bar inside distinct (Red/Purple) */
+#header-xp .xp-bar-fill {
+  background: linear-gradient(90deg, #ff0066, #aa00ff) !important;
+  box-shadow: 0 0 8px #ff0066 !important;
+}
+
+/* === HEADER XP BOX - ALL PURPLE/RED THEME === */
+
+/* 1. Override Green Border to Purple/Red */
+#header-xp.xp-display {
+  border-color: #ff0066 !important; /* Neon Red/Pink Border */
+  box-shadow: 0 0 5px rgba(255, 0, 102, 0.2) !important;
+}
+
+/* 2. Override Green Text to Purple/Red */
+#header-xp .xp-text {
+  color: #ff0066 !important; /* Neon Red/Pink Text */
+  text-shadow: 0 0 5px rgba(255, 0, 102, 0.4) !important;
+}
+
+/* 3. Ensure XP bar container border matches */
+#header-xp .xp-bar-container {
+  border-color: rgba(255, 0, 102, 0.4) !important;
+  background: rgba(255, 0, 102, 0.05) !important;
+}
+
+/* === PROFILE MODAL XP TEXT FIX === */
+.xp-bar-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+/* Ensure XP text is visible and positioned correctly */
+.profile-section .xp-text {
+  font-size: 10px;
+  color: #aaa;
+  text-align: right;
+  width: 100%;
+  display: block !important;
+  visibility: visible !important;
+  opacity: 1 !important;
+}
+
+.profile-section .next-level-xp {
+  color: #ff00cc; /* Matches level badge */
+  font-family: 'Share Tech Mono', monospace;
+}
+
+/* === FINAL PROFILE MODAL LAYOUT OVERRIDES === */
+
+/* 1. Flex Layout for Level Badge & Bar */
+.profile-section .level-display {
+  display: flex !important;
+  align-items: center !important;
+  gap: 20px !important;
+}
+
+/* 2. Boxed Level Badge (Screenshot style) */
+.profile-section .level-badge {
+  border: 1px solid #ff0066 !important;
+  padding: 15px 25px !important;
+  background: rgba(255, 0, 102, 0.1) !important;
+  color: #ff0066 !important;
+  font-family: 'Orbitron', sans-serif !important;
+  font-size: 1.2rem !important;
+  text-shadow: 0 0 10px rgba(255, 0, 102, 0.5) !important;
+  min-width: 80px !important;
+  display: flex !important;
+  justify-content: center !important;
+  align-items: center !important;
+  flex-direction: row !important;
+  gap: 8px !important;
+}
+
+.profile-section .level-number {
+  font-size: 1.4rem !important;
+  font-weight: bold !important;
+}
+
+/* 3. XP Bar Wrapper & Layout */
+.profile-section .xp-bar-wrapper {
+  flex: 1 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  gap: 8px !important;
+}
+
+/* 4. The Bar Itself */
+.profile-section .xp-bar-container {
+  width: 100% !important;
+  height: 8px !important;
+  background: rgba(0, 0, 0, 0.6) !important;
+  border: 1px solid #00ff99 !important; /* Green border as requested for contrast or user preference? User said "renkler bize uygun olsun" but screenshot had green. Let's match the screenshot structure but use our theme colors. I'll use Green border for the bar to match the screenshot look but keep the fill our theme if needed. Actually screenshot bar is green. Let's try Green to vary from the pink Badge. */
+  margin: 0 !important;
+  border-radius: 0 !important;
+}
+
+.profile-section .xp-fill {
+  background: #00ff99 !important; /* Green fill */
+  box-shadow: 0 0 8px #00ff99 !important;
+  height: 100% !important;
+  width: 0%; /* Will be set by JS */
+}
+
+/* 5. Text Alignment */
+.profile-section .xp-text {
+  text-align: left !important; /* Align left under the bar */
+  color: #00ff99 !important; /* Green text */
+  font-family: 'Share Tech Mono', monospace !important;
+  font-size: 10px !important;
+  letter-spacing: 1px !important;
+}
+
+.profile-section .next-level-xp {
+  color: inherit !important;
+}
+
+/* === PROFILE MODAL REFINEMENTS (PINK XP & NO BOX) === */
+
+/* 1. Remove Level Badge Box */
+.profile-section .level-badge {
+  border: none !important;
+  background: transparent !important;
+  padding: 0 !important;
+  min-width: auto !important;
+  box-shadow: none !important; /* Remove box shadow from text if any */
+  text-shadow: 0 0 15px rgba(255, 0, 102, 0.8) !important; /* Enhance text glow instead */
+}
+
+/* 2. Change XP Bar Fill to Pink/Red */
+.profile-section .xp-fill {
+  background: linear-gradient(90deg, #ff0066, #ff00cc) !important; /* Pink Gradient */
+  box-shadow: 0 0 10px #ff0066 !important;
+}
+
+/* 3. Update XP Bar Border to match (Optional, or keep green border for contrast? User asked for XP progress color to be pinkish. Usually border matches or is neutral. Let's make border subtle pink or keep it neutral/dark if not specified, but typically matching theme is good. Let's change border to pink to match the fill.) */
+.profile-section .xp-bar-container {
+  border-color: rgba(255, 0, 102, 0.5) !important;
+}
+
+/* 4. Update XP Text Color to Pink to match bar */
+.profile-section .xp-text {
+  color: #ff0066 !important;
+}
