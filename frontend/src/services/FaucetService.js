@@ -18,12 +18,12 @@ class FaucetServiceClass {
 
   /**
    * Initialize faucet configuration
-   * Tries env variables first, then local config file
+   * Uses environment variables (.env file)
    */
   async init() {
     if (this.isInitialized) return true;
 
-    // Try environment variables first (production)
+    // Get config from environment variables
     const envPrivateKey = import.meta.env.VITE_FAUCET_PRIVATE_KEY;
     
     if (envPrivateKey) {
@@ -35,28 +35,19 @@ class FaucetServiceClass {
           : 86400000 // 24 hours default
       };
       this.isInitialized = true;
-      console.log('Faucet initialized from env variables');
+      console.log('Faucet initialized');
       return true;
     }
 
-    // Try local config file (development)
-    try {
-      const module = await import(/* @vite-ignore */ '../config/faucet.config.local.js');
-      this.faucetConfig = module.FAUCET_CONFIG;
-      this.isInitialized = true;
-      console.log('Faucet initialized from local config');
-      return true;
-    } catch {
-      // No config available - faucet won't work
-      this.faucetConfig = { 
-        privateKey: null, 
-        amount: '0.1', 
-        cooldown: 86400000 
-      };
-      this.isInitialized = true;
-      console.warn('Faucet config not found - faucet disabled');
-      return false;
-    }
+    // No config available - faucet disabled
+    this.faucetConfig = { 
+      privateKey: null, 
+      amount: '0.1', 
+      cooldown: 86400000 
+    };
+    this.isInitialized = true;
+    console.warn('Faucet not configured - add VITE_FAUCET_PRIVATE_KEY to .env');
+    return false;
   }
 
   /**
