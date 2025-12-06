@@ -16,13 +16,67 @@ export class Player {
       walkTime: 0
     };
     
+    // Material references for dynamic color updates
+    this.neonMaterial = null;
+    this.visorMaterial = null;
+    this.coreRingMat = null;
+    this.visorGlowMat = null;
+    this.groundRingMat = null;
+    this.neonGreenMaterial = null;
+    this.playerLight = null;
+    this.nameLabel = null;
+
     this.createModel();
     this.mesh.scale.set(CONFIG.player.scale, CONFIG.player.scale, CONFIG.player.scale);
-    
-    this.nameLabel = null;
   }
 
-  createNameLabel(text) {
+  setNeonColor(hexColor) {
+    // Convert hex/string color to THREE.Color object
+    const color = new THREE.Color(hexColor);
+
+    // Check if we are setting to the "High Level" orange color
+    // Using getHex() to compare integer color values
+    const isHighLevel = color.getHex() === 0xffaa00;
+
+    // Update main neon material - reused by many parts (stripes, rings, core)
+    if (this.neonMaterial) {
+      this.neonMaterial.color.set(color);
+    }
+    
+    // Update visor material
+    if (this.visorMaterial) {
+      this.visorMaterial.color.set(color);
+    }
+
+    // Update glow/transparent materials
+    if (this.coreRingMat) {
+      this.coreRingMat.color.set(color);
+    }
+    if (this.visorGlowMat) {
+      this.visorGlowMat.color.set(color);
+    }
+    if (this.groundRingMat) {
+      this.groundRingMat.color.set(color);
+    }
+
+    // Update "Green" parts (Sword/Thrusters)
+    // Now they follow the main neon color (Cyan default, Orange high level)
+    if (this.neonGreenMaterial) {
+      this.neonGreenMaterial.color.set(color);
+    }
+
+    // Update point light
+    if (this.playerLight) {
+      this.playerLight.color.set(color);
+    }
+    
+    // Update label color if it exists
+    if (this.nameLabel) {
+      this.nameLabel.material.color.set(color);
+    }
+  }
+
+  createNameLabel(text, color = '#00ffff') {
     // Remove existing if any
     if (this.nameLabel) {
       this.mesh.remove(this.nameLabel);
@@ -37,15 +91,15 @@ export class Player {
     canvas.width = 512;
     canvas.height = 128;
 
-    // Text style - Neon Blue
+    // Text style
     context.font = 'bold 60px "Orbitron", sans-serif';
     context.textAlign = 'center';
     context.textBaseline = 'middle';
     
     // Glow effect
-    context.shadowColor = '#00ffff';
+    context.shadowColor = color;
     context.shadowBlur = 20;
-    context.fillStyle = '#00ffff';
+    context.fillStyle = color;
     
     // Draw text
     context.fillText(text, 256, 64);
@@ -55,7 +109,8 @@ export class Player {
     const material = new THREE.SpriteMaterial({ 
       map: texture, 
       transparent: true,
-      depthTest: false // Always visible on top if needed, or true for occlusion
+      depthTest: false,
+      color: 0xffffff // Base white, let texture carry color/glow
     });
     
     this.nameLabel = new THREE.Sprite(material);
@@ -77,10 +132,33 @@ export class Player {
     const bodyMat = new THREE.MeshLambertMaterial({ color: 0x3a3a45 });
     const accentMat = new THREE.MeshLambertMaterial({ color: 0x4a4a55 });
     
-    // Neon materials - bright cyan
-    const neonCyan = new THREE.MeshBasicMaterial({ color: 0x00ffff });
-    const neonGreen = new THREE.MeshBasicMaterial({ color: 0x00ff88 });
-    const visorMat = new THREE.MeshBasicMaterial({ color: 0x00ffff });
+    // Neon materials - Store references
+    this.neonMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff }); // Default Cyan
+    this.neonGreenMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff }); // For sword/thrusters (Now Cyan)
+    this.visorMaterial = new THREE.MeshBasicMaterial({ color: 0x00ffff }); // Default Cyan
+    
+    // Transparent glow materials - Store references
+    this.coreRingMat = new THREE.MeshBasicMaterial({ 
+      color: 0x00ffff, 
+      transparent: true, 
+      opacity: 0.5 
+    });
+    
+    this.visorGlowMat = new THREE.MeshBasicMaterial({ 
+      color: 0x00ffff, 
+      transparent: true, 
+      opacity: 0.4 
+    });
+    
+    this.groundRingMat = new THREE.MeshBasicMaterial({ 
+      color: 0x00ffff, 
+      transparent: true, 
+      opacity: 0.3,
+      side: THREE.DoubleSide
+    });
+
+    const neonCyan = this.neonMaterial;
+    const visorMat = this.visorMaterial;
 
     // === TORSO ===
     const torso = new THREE.Mesh(
@@ -133,11 +211,7 @@ export class Player {
     // Core glow ring
     const coreRing = new THREE.Mesh(
       new THREE.RingGeometry(0.18, 0.25, 16),
-      new THREE.MeshBasicMaterial({ 
-        color: 0x00ffff, 
-        transparent: true, 
-        opacity: 0.5 
-      })
+      this.coreRingMat
     );
     coreRing.position.set(0, 1.45, 0.38);
     this.mesh.add(coreRing);
@@ -169,11 +243,7 @@ export class Player {
     // Visor glow effect
     const visorGlow = new THREE.Mesh(
       new THREE.BoxGeometry(0.54, 0.2, 0.05),
-      new THREE.MeshBasicMaterial({ 
-        color: 0x00ffff, 
-        transparent: true, 
-        opacity: 0.4 
-      })
+      this.visorGlowMat
     );
     visorGlow.position.set(0, 2.0, 0.35);
     this.mesh.add(visorGlow);
@@ -210,14 +280,14 @@ export class Player {
     // Jetpack thrusters
     const thruster1 = new THREE.Mesh(
       new THREE.CylinderGeometry(0.1, 0.15, 0.3, 8),
-      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+      this.neonGreenMaterial
     );
     thruster1.position.set(-0.15, 1.1, -0.4);
     this.mesh.add(thruster1);
     
     const thruster2 = new THREE.Mesh(
       new THREE.CylinderGeometry(0.1, 0.15, 0.3, 8),
-      new THREE.MeshBasicMaterial({ color: 0x00ff88 })
+      this.neonGreenMaterial
     );
     thruster2.position.set(0.15, 1.1, -0.4);
     this.mesh.add(thruster2);
@@ -235,26 +305,21 @@ export class Player {
     // Blade - glowing
     const swordBlade = new THREE.Mesh(
       new THREE.BoxGeometry(0.08, 0.9, 0.02),
-      neonGreen
+      this.neonGreenMaterial
     );
     swordBlade.position.set(0.55, 2.0, -0.35);
     swordBlade.rotation.z = -0.5;
     this.mesh.add(swordBlade);
 
     // === POINT LIGHT - makes character glow ===
-    const playerLight = new THREE.PointLight(0x00ffff, 0.8, 15);
-    playerLight.position.y = 1.5;
-    this.mesh.add(playerLight);
+    this.playerLight = new THREE.PointLight(0x00ffff, 0.8, 15);
+    this.playerLight.position.y = 1.5;
+    this.mesh.add(this.playerLight);
 
     // Ground indicator ring
     const groundRing = new THREE.Mesh(
       new THREE.RingGeometry(0.8, 1.0, 24),
-      new THREE.MeshBasicMaterial({ 
-        color: 0x00ffff, 
-        transparent: true, 
-        opacity: 0.3,
-        side: THREE.DoubleSide
-      })
+      this.groundRingMat
     );
     groundRing.rotation.x = -Math.PI / 2;
     groundRing.position.y = 0.05;

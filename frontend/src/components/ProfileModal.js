@@ -17,6 +17,7 @@ export class ProfileModal {
     this.isDragging = false;
     this.previousMousePosition = { x: 0, y: 0 };
     this.currentAddress = null; // Track current address for updates
+    this.characterNeonMat = null; // Store reference for updates
     this.create();
   }
 
@@ -150,6 +151,20 @@ export class ProfileModal {
     const profile = await ProfileService.getProfile(this.currentAddress);
     if (profile) {
       this.updateUI(profile);
+      this.updateCharacterVisuals(profile.level);
+    }
+  }
+
+  updateCharacterVisuals(level) {
+    if (!this.characterNeonMat) return;
+    
+    const lvl = parseInt(level || 1);
+    if (lvl >= 5) {
+      // Level 5+: Neon Orange
+      this.characterNeonMat.color.setHex(0xffaa00);
+    } else {
+      // Default: Neon Cyan
+      this.characterNeonMat.color.setHex(0x00ffcc);
     }
   }
 
@@ -303,6 +318,7 @@ export class ProfileModal {
       transparent: true, 
       opacity: 0.9 
     });
+    this.characterNeonMat = neonMat;
     
     const visorMat = new THREE.MeshBasicMaterial({ 
       color: 0x00ffff,

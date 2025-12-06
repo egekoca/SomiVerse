@@ -173,9 +173,9 @@ export class User {
    * Logic to determine character appearance based on stats
    */
   updateVisuals() {
-    // Level 5+ gets Purple lights
+    // Level 5+ gets Neon Orange lights
     if (this.level >= 5) {
-      this.visual_config.lightColor = '#9d00ff'; // Neon Purple
+      this.visual_config.lightColor = '#ffaa00'; // Neon Orange
       this.visual_config.aura = 'weak_pulse';
     }
     

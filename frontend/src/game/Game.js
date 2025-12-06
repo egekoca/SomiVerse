@@ -285,6 +285,15 @@ export class Game {
     if (!this.player || !profile) return;
 
     const level = parseInt(profile.level || 1);
+    let labelColor = '#00ffff'; // Default Cyan
+    
+    // Level 5+ Logic: Change character visuals to Orange
+    if (level >= 5) {
+      labelColor = '#ffaa00'; // Neon Orange
+      this.player.setNeonColor(0xffaa00);
+    } else {
+      this.player.setNeonColor(0x00ffff);
+    }
     
     // Show label only if level is between 1 and 5 (inclusive)
     if (level >= 1 && level <= 5) {
@@ -292,7 +301,7 @@ export class Game {
       if (addr) {
         // Format: 0x1234...5678 (First 6 chars ... Last 4 chars)
         const formatted = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-        this.player.createNameLabel(formatted);
+        this.player.createNameLabel(formatted, labelColor);
       }
     } else {
       this.player.removeNameLabel();
