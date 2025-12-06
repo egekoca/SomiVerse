@@ -64,18 +64,30 @@ export class InputSystem {
     if (!this.enabled) return { dx: 0, dz: 0, isMoving: false };
     
     const speed = CONFIG.player.speed;
-    let dx = 0;
-    let dz = 0;
-
-    if (this.keys.w || this.keys.up) dz = -speed;
-    if (this.keys.s || this.keys.down) dz = speed;
-    if (this.keys.a || this.keys.left) dx = -speed;
-    if (this.keys.d || this.keys.right) dx = speed;
+    
+    // Calculate raw direction (-1, 0, or 1 for each axis)
+    const up = this.keys.w || this.keys.up;
+    const down = this.keys.s || this.keys.down;
+    const left = this.keys.a || this.keys.left;
+    const right = this.keys.d || this.keys.right;
+    
+    // Cancel out opposite directions
+    let dx = (right ? 1 : 0) - (left ? 1 : 0);
+    let dz = (down ? 1 : 0) - (up ? 1 : 0);
+    
+    const isMoving = dx !== 0 || dz !== 0;
+    
+    // Normalize diagonal movement (prevent faster speed)
+    if (dx !== 0 && dz !== 0) {
+      const normalize = 1 / Math.SQRT2; // ≈ 0.7071
+      dx *= normalize;
+      dz *= normalize;
+    }
 
     return {
-      dx,
-      dz,
-      isMoving: dx !== 0 || dz !== 0
+      dx: dx * speed,
+      dz: dz * speed,
+      isMoving
     };
   }
 
