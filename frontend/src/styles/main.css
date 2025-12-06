@@ -2129,3 +2129,98 @@ button#header-connect.hidden {
   color: #ffaa00 !important;
   text-shadow: 0 0 5px rgba(255, 170, 0, 0.6) !important;
 }
+
+/* === SOMNIA DOMAIN SERVICE STYLES === */
+
+/* Somnia Domain Display in Profile Modal */
+.somnia-domain-display {
+  background: linear-gradient(135deg, rgba(170, 0, 255, 0.15), rgba(0, 255, 204, 0.1));
+  border: 1px solid rgba(170, 0, 255, 0.5);
+  padding: 12px 15px;
+  margin-bottom: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  position: relative;
+  overflow: hidden;
+}
+
+.somnia-domain-display::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #aa00ff, #00ffcc, transparent);
+  animation: domainGlow 2s ease-in-out infinite;
+}
+
+@keyframes domainGlow {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+.somnia-domain-display.hidden {
+  display: none;
+}
+
+.som-domain-label {
+  font-size: 10px;
+  color: rgba(170, 0, 255, 0.8);
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+}
+
+.som-domain-name {
+  font-size: 1.4rem;
+  font-weight: bold;
+  color: #00ffcc;
+  font-family: 'Orbitron', sans-serif;
+  text-shadow: 0 0 15px rgba(0, 255, 204, 0.8), 0 0 30px rgba(0, 255, 204, 0.4);
+  letter-spacing: 1px;
+}
+
+/* Wallet Display Updates for Profile */
+.wallet-display {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.wallet-label {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.5);
+  font-family: 'Share Tech Mono', monospace;
+  letter-spacing: 2px;
+}
+
+.wallet-address-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wallet-full-address {
+  color: rgba(255, 255, 255, 0.8);
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 12px;
+  word-break: break-all;
+}
+
+/* Header Somnia Domain Style */
+.wallet-addr.has-domain {
+  color: #00ffcc !important;
+  font-weight: bold;
+  text-shadow: 0 0 8px rgba(0, 255, 204, 0.6);
+}
+
+/* Somnia Domain Badge in Header (Optional Enhancement) */
+.som-badge {
+  background: linear-gradient(135deg, #aa00ff, #00ffcc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: bold;
+}

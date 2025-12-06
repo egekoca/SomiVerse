@@ -78,6 +78,9 @@ export class Game {
     // Raycaster for click interactions
     this.raycaster = new THREE.Raycaster();
     this.mouse = new THREE.Vector2();
+
+    // Somnia domain name for current player
+    this.currentSomName = null;
   }
 
   async init() {
@@ -155,7 +158,8 @@ export class Game {
         // Update profile object with new level/xp for the label check
         profile.level = level;
         profile.xp = totalXP;
-        this.updatePlayerLabel(profile);
+        // Use stored somName (already set in handleWalletConnected)
+        this.updatePlayerLabel(profile, this.currentSomName);
       }
     });
 
@@ -331,9 +335,10 @@ export class Game {
   }
 
   handleWalletConnected(detail) {
-    const { profile } = detail;
+    const { profile, somName } = detail;
     
-    console.log('Wallet Connected. Profile Data:', profile);
+    // Store somName for later use
+    this.currentSomName = somName || null;
     
     if (this.player && profile) {
       // Check if profile has saved position
@@ -362,13 +367,16 @@ export class Game {
         // TODO: Implement visual updates
       }
 
-      // Update Name Label
-      this.updatePlayerLabel(profile);
+      // Update Name Label with Somnia domain support
+      this.updatePlayerLabel(profile, somName);
     }
   }
 
-  updatePlayerLabel(profile) {
+  updatePlayerLabel(profile, somName = null) {
     if (!this.player || !profile) return;
+
+    // Use passed somName or fallback to stored value
+    const displaySomName = somName || this.currentSomName;
 
     const level = parseInt(profile.level || 1);
     let labelColor = '#00ffff'; // Default Cyan
@@ -381,16 +389,12 @@ export class Game {
       this.player.setNeonColor(0x00ffff);
     }
     
-    // Show label only if level is between 1 and 5 (inclusive)
-    if (level >= 1 && level <= 5) {
-      const addr = profile.wallet_address;
-      if (addr) {
-        // Format: 0x1234...5678 (First 6 chars ... Last 4 chars)
-        const formatted = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-        this.player.createNameLabel(formatted, labelColor);
-      }
-    } else {
-      this.player.removeNameLabel();
+    // Show label for all levels
+    const addr = profile.wallet_address;
+    if (addr) {
+      // Use Somnia domain name if available, otherwise shortened address
+      const displayName = displaySomName || `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+      this.player.createNameLabel(displayName, labelColor);
     }
   }
 
@@ -398,6 +402,9 @@ export class Game {
    * Resets player position to spawn
    */
   resetPlayerState(profileData = null) {
+    // Clear Somnia domain name
+    this.currentSomName = null;
+    
     if (this.player) {
       this.player.resetPosition();
       this.player.removeNameLabel();

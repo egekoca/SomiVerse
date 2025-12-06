@@ -4,6 +4,7 @@
  */
 import * as THREE from 'three';
 import { ProfileService } from '../services/ProfileService.js';
+import { SomniaNameService } from '../services/SomniaNameService.js';
 
 export class ProfileModal {
   constructor() {
@@ -17,6 +18,7 @@ export class ProfileModal {
     this.isDragging = false;
     this.previousMousePosition = { x: 0, y: 0 };
     this.currentAddress = null; // Track current address for updates
+    this.currentSomName = null; // Somnia domain name (.somi)
     this.characterNeonMat = null; // Store reference for updates
     this.characterVisorMat = null; // Store reference for visor updates
     this.characterThrusterMat = null; // Store reference for thruster updates
@@ -47,10 +49,17 @@ export class ProfileModal {
           
           <div class="profile-right">
             <div class="profile-section">
-              <div class="section-title">WALLET</div>
+              <div class="section-title">IDENTITY</div>
+              <div class="somnia-domain-display hidden">
+                <span class="som-domain-label">.SOMI DOMAIN</span>
+                <span class="som-domain-name">Loading...</span>
+              </div>
               <div class="wallet-display">
-                <span class="wallet-full-address">Loading...</span>
-                <button class="copy-btn" title="Copy">⧉</button>
+                <span class="wallet-label">WALLET</span>
+                <div class="wallet-address-row">
+                  <span class="wallet-full-address">Loading...</span>
+                  <button class="copy-btn" title="Copy">⧉</button>
+                </div>
               </div>
             </div>
             
@@ -136,14 +145,45 @@ export class ProfileModal {
 
   async open(walletAddress) {
     this.currentAddress = walletAddress;
+    this.currentSomName = null;
     this.element.classList.add('active');
     this.isOpen = true;
 
     // Initialize 3D viewer immediately
     setTimeout(() => this.init3DViewer(), 100);
 
+    // Resolve Somnia domain name (.somi)
+    try {
+      const somName = await SomniaNameService.getPrimarySomName(walletAddress);
+      if (somName) {
+        this.currentSomName = somName;
+        this.updateSomniaDisplay(somName);
+      } else {
+        this.hideSomniaDisplay();
+      }
+    } catch {
+      this.hideSomniaDisplay();
+    }
+
     // Fetch and update data
     await this.refreshProfile();
+  }
+
+  updateSomniaDisplay(somName) {
+    const domainDisplay = this.element.querySelector('.somnia-domain-display');
+    const domainName = this.element.querySelector('.som-domain-name');
+    
+    if (domainDisplay && domainName) {
+      domainName.textContent = somName;
+      domainDisplay.classList.remove('hidden');
+    }
+  }
+
+  hideSomniaDisplay() {
+    const domainDisplay = this.element.querySelector('.somnia-domain-display');
+    if (domainDisplay) {
+      domainDisplay.classList.add('hidden');
+    }
   }
 
   async refreshProfile() {

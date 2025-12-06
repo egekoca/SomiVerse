@@ -3,6 +3,7 @@
  * Main navigation bar with logo, profile, XP, and wallet
  */
 import { ProfileService } from '../services/ProfileService.js';
+import { SomniaNameService } from '../services/SomniaNameService.js';
 
 export class Header {
   constructor(profileModal = null) {
@@ -10,6 +11,7 @@ export class Header {
     this.profileModal = profileModal;
     this.isConnected = false;
     this.account = null;
+    this.somName = null; // Somnia domain name (.somi)
     this.dropdownOpen = false;
     this.xp = 0;
     this.level = 1;
@@ -161,6 +163,7 @@ export class Header {
 
     this.isConnected = true;
     this.account = account;
+    this.somName = null; // Reset on new connection
 
     // Update UI
     this.element.querySelector('#header-connect').classList.add('hidden');
@@ -169,11 +172,21 @@ export class Header {
     if (xpDisplay) xpDisplay.classList.remove('hidden');
 
     this.element.querySelector('#header-wallet-info').classList.remove('hidden');
-    // this.element.querySelector('#header-profile').classList.remove('hidden'); (Moved to dropdown)
     
-    // Short address
+    // Short address as fallback
     const shortAddr = `${account.slice(0, 6)}...${account.slice(-4)}`;
     this.element.querySelector('.wallet-addr').textContent = shortAddr;
+
+    // Resolve Somnia domain name (.somi)
+    try {
+      const somName = await SomniaNameService.getPrimarySomName(account);
+      if (somName) {
+        this.somName = somName;
+        this.element.querySelector('.wallet-addr').textContent = somName;
+      }
+    } catch (err) {
+      // Silent fail - fallback to shortened address
+    }
 
     // Load profile
     const profile = await ProfileService.getOrCreateProfile(account);
@@ -181,16 +194,20 @@ export class Header {
       this.updateXP(profile.xp, profile.level);
     }
 
-    // Dispatch event
+    // Dispatch event with somName included
     window.dispatchEvent(new CustomEvent('walletConnected', { 
-      detail: { account, profile } 
+      detail: { account, profile, somName: this.somName } 
     }));
   }
 
   setDisconnected() {
     this.isConnected = false;
     this.account = null;
+    this.somName = null;
     this.closeDropdown();
+
+    // Clear Somnia name cache
+    SomniaNameService.clearCache();
 
     // Update UI
     this.element.querySelector('#header-connect').classList.remove('hidden');
@@ -209,7 +226,6 @@ export class Header {
     }
     
     this.element.querySelector('#header-wallet-info').classList.add('hidden');
-    // this.element.querySelector('#header-profile').classList.add('hidden'); (Moved to dropdown)
 
     ProfileService.clearCurrentProfile();
 

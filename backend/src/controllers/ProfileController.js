@@ -172,6 +172,55 @@ export class ProfileController {
       res.status(500).json({ error: 'Internal server error' });
     }
   }
+
+  /**
+   * Get Somnia Domain (.somi) for wallet address
+   * Proxies request to somnia.domains API to avoid CORS issues
+   */
+  static async getSomniaDomain(req, res) {
+    const { address } = req.params;
+
+    if (!address) {
+      return res.status(400).json({ error: 'Wallet address required' });
+    }
+
+    try {
+      const apiUrl = `https://api.somnia.domains/api/primary-domain/${address}`;
+      
+      const response = await fetch(apiUrl, {
+        method: 'GET',
+        headers: {
+          'Accept': 'application/json'
+        }
+      });
+
+      if (!response.ok) {
+        // API returned an error, return empty result
+        return res.json({
+          wallet: address,
+          primaryDomain: null,
+          hasPrimary: false
+        });
+      }
+
+      const data = await response.json();
+      
+      // Forward the response
+      res.json({
+        wallet: data.wallet || address,
+        primaryDomain: data.primaryDomain || null,
+        hasPrimary: data.hasPrimary || false
+      });
+    } catch (error) {
+      console.error('Somnia Domain Lookup Error:', error);
+      // Return empty result on error (don't fail the whole request)
+      res.json({
+        wallet: address,
+        primaryDomain: null,
+        hasPrimary: false
+      });
+    }
+  }
 }
 
 export default ProfileController;

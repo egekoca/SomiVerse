@@ -10,6 +10,9 @@ const router = Router();
 // Get leaderboard
 router.get('/leaderboard', ProfileController.getLeaderboard);
 
+// Somnia Domain Lookup (Proxy to avoid CORS)
+router.get('/domain/:address', ProfileController.getSomniaDomain);
+
 // Get profile by address
 router.get('/:address', ProfileController.getProfile);
 
