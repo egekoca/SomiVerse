@@ -18,6 +18,58 @@ export class Player {
     
     this.createModel();
     this.mesh.scale.set(CONFIG.player.scale, CONFIG.player.scale, CONFIG.player.scale);
+    
+    this.nameLabel = null;
+  }
+
+  createNameLabel(text) {
+    // Remove existing if any
+    if (this.nameLabel) {
+      this.mesh.remove(this.nameLabel);
+      this.nameLabel = null;
+    }
+
+    if (!text) return;
+
+    // Create canvas for text
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = 512;
+    canvas.height = 128;
+
+    // Text style - Neon Blue
+    context.font = 'bold 60px "Orbitron", sans-serif';
+    context.textAlign = 'center';
+    context.textBaseline = 'middle';
+    
+    // Glow effect
+    context.shadowColor = '#00ffff';
+    context.shadowBlur = 20;
+    context.fillStyle = '#00ffff';
+    
+    // Draw text
+    context.fillText(text, 256, 64);
+
+    // Create sprite
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({ 
+      map: texture, 
+      transparent: true,
+      depthTest: false // Always visible on top if needed, or true for occlusion
+    });
+    
+    this.nameLabel = new THREE.Sprite(material);
+    this.nameLabel.position.set(0, 3.2, 0); // Above head
+    this.nameLabel.scale.set(2.5, 0.625, 1); // Aspect ratio of canvas
+    
+    this.mesh.add(this.nameLabel);
+  }
+
+  removeNameLabel() {
+    if (this.nameLabel) {
+      this.mesh.remove(this.nameLabel);
+      this.nameLabel = null;
+    }
   }
 
   createModel() {

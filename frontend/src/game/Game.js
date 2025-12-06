@@ -134,6 +134,19 @@ export class Game {
       this.resetPlayerState();
     });
     
+    // Update player label on XP gain
+    window.addEventListener('xpGained', (e) => {
+      const { totalXP, level } = e.detail;
+      // We need the address, getting it from current profile service
+      const profile = ProfileService.getCurrentProfile();
+      if (profile) {
+        // Update profile object with new level/xp for the label check
+        profile.level = level;
+        profile.xp = totalXP;
+        this.updatePlayerLabel(profile);
+      }
+    });
+
     // Save position before unload
     window.addEventListener('beforeunload', () => {
       this.savePlayerPosition();
@@ -262,6 +275,27 @@ export class Game {
       if (profile.visual_config) {
         // TODO: Implement visual updates
       }
+
+      // Update Name Label
+      this.updatePlayerLabel(profile);
+    }
+  }
+
+  updatePlayerLabel(profile) {
+    if (!this.player || !profile) return;
+
+    const level = parseInt(profile.level || 1);
+    
+    // Show label only if level is between 1 and 5 (inclusive)
+    if (level >= 1 && level <= 5) {
+      const addr = profile.wallet_address;
+      if (addr) {
+        // Format: 0x1234...5678 (First 6 chars ... Last 4 chars)
+        const formatted = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+        this.player.createNameLabel(formatted);
+      }
+    } else {
+      this.player.removeNameLabel();
     }
   }
 
@@ -271,6 +305,7 @@ export class Game {
   resetPlayerState(profileData = null) {
     if (this.player) {
       this.player.resetPosition();
+      this.player.removeNameLabel();
       this.cameraManager.followTarget(this.player.getPosition());
       console.log('Player reset to spawn point.');
     }
