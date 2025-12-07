@@ -4,6 +4,7 @@
  */
 import { FaucetService } from '../services/FaucetService.js';
 import { SwapService } from '../services/SwapService.js';
+import { GearboxService } from '../services/GearboxService.js';
 
 export class Modal {
   constructor() {
@@ -114,8 +115,10 @@ export class Modal {
       if (this.isOpen) {
         if (this.currentType === 'CLAIM') {
           this.refreshFaucetContent();
-        } else if (this.currentType === 'SWAP') {
+        } else         if (this.currentType === 'SWAP') {
           this.refreshSwapContent();
+        } else if (this.currentType === 'LEND') {
+          this.refreshLendingContent();
         }
       }
     });
@@ -142,6 +145,11 @@ export class Modal {
     // Initialize swap UI if needed
     if (type === 'SWAP') {
       this.initSwapUI();
+    }
+
+    // Initialize lending UI if needed
+    if (type === 'LEND') {
+      this.initLendingUI();
     }
 
     // Auto-focus on first interactive element
@@ -171,8 +179,15 @@ export class Modal {
       case 'swap':
         await this.handleSwapExecute(button);
         break;
+      case 'deposit':
+        await this.handleLendingDeposit(button);
+        break;
+      case 'withdraw':
+        await this.handleLendingWithdraw(button);
+        break;
       case 'lend':
-        await this.simulateTransaction(button, 'DEPOSIT SUCCESSFUL: 1000 USDC', 75);
+        // Legacy support
+        await this.handleLendingDeposit(button);
         break;
       case 'mint':
         await this.simulateTransaction(button, 'NFT MINTED: CYBER PUNK #8842', 150);
@@ -666,6 +681,15 @@ export class Modal {
     this.initSwapUI();
   }
 
+  /**
+   * Refresh lending modal content
+   */
+  async refreshLendingContent() {
+    const { generateLendingContent } = await import('./ModalContent.js');
+    this.bodyEl.innerHTML = generateLendingContent(this.walletAddress);
+    this.initLendingUI();
+  }
+
   showMessage(text, type = 'info', xpAmount = 0) {
     let messageEl = this.bodyEl.querySelector('.faucet-message');
     
@@ -724,6 +748,361 @@ export class Modal {
 
   setWalletAddress(address) {
     this.walletAddress = address;
+  }
+
+  // --- LENDING HANDLERS (Gearbox Protocol) ---
+
+  /**
+   * Initialize Lending UI event listeners
+   */
+  initLendingUI() {
+    GearboxService.init();
+    
+    // Tab switching
+    const tabs = this.bodyEl.querySelectorAll('.lending-tab');
+    const tabContents = this.bodyEl.querySelectorAll('.lending-tab-content');
+    
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const targetTab = tab.dataset.tab;
+        
+        // Update tab styles
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          t.style.borderBottomColor = 'transparent';
+          t.style.color = 'rgba(255,255,255,0.5)';
+        });
+        tab.classList.add('active');
+        tab.style.borderBottomColor = 'var(--theme-color, #00ffcc)';
+        tab.style.color = 'var(--theme-color, #00ffcc)';
+        
+        // Show/hide tab contents
+        tabContents.forEach(content => {
+          if (content.dataset.content === targetTab) {
+            content.style.display = 'block';
+          } else {
+            content.style.display = 'none';
+          }
+        });
+        
+        // Load data for the active tab
+        this.loadLendingData();
+      });
+    });
+    
+    // Load balances and pool data
+    this.loadLendingData();
+
+    // No token selector needed - only WSOMI is used
+
+    // Amount inputs
+    const amountInputs = this.bodyEl.querySelectorAll('#lend-amount, #lend-amount-withdraw');
+    amountInputs.forEach(amountInput => {
+      if (amountInput) {
+        amountInput.addEventListener('input', async () => {
+          await this.updateLendingPreview();
+        });
+      }
+    });
+
+    // Percent buttons
+    const percentBtns = this.bodyEl.querySelectorAll('.percent-btn');
+    percentBtns.forEach(btn => {
+      btn.addEventListener('click', () => {
+        const percent = btn.dataset.percent;
+        this.handleLendingPercent(percent);
+      });
+    });
+  }
+
+  /**
+   * Update lending preview (amount calculations)
+   */
+  async updateLendingPreview() {
+    // Get active tab
+    const activeTab = this.bodyEl.querySelector('.lending-tab.active');
+    if (!activeTab) return;
+    
+    const tabType = activeTab.dataset.tab;
+    
+    if (tabType === 'deposit') {
+      const amountInput = this.bodyEl.querySelector('#lend-amount');
+      const youGetEl = this.bodyEl.querySelector('#you-get-amount');
+      if (amountInput && youGetEl) {
+        const amount = parseFloat(amountInput.value) || 0;
+        youGetEl.textContent = `${amount.toFixed(2)} dWSOMI-V3-1`;
+      }
+    } else if (tabType === 'withdraw') {
+      const amountInput = this.bodyEl.querySelector('#lend-amount-withdraw');
+      const youGetEl = this.bodyEl.querySelector('#you-get-amount-withdraw');
+      if (amountInput && youGetEl) {
+        const amount = parseFloat(amountInput.value) || 0;
+        
+        if (amount > 0 && this.walletAddress) {
+          // Calculate preview WSOMI from dWSOMI-V3-1 shares
+          try {
+            const previewWSOMI = await GearboxService.previewWithdraw(amount);
+            youGetEl.textContent = `${previewWSOMI.toFixed(6)} WSOMI`;
+          } catch (e) {
+            // Fallback to 1:1 ratio if preview fails
+            youGetEl.textContent = `${amount.toFixed(6)} WSOMI`;
+          }
+        } else {
+          youGetEl.textContent = `0.00 WSOMI`;
+        }
+      }
+    }
+  }
+
+  /**
+   * Load lending data (balances, pool stats)
+   */
+  async loadLendingData() {
+    if (!this.walletAddress) return;
+
+    // Get active tab
+    const activeTab = this.bodyEl.querySelector('.lending-tab.active');
+    const tabType = activeTab ? activeTab.dataset.tab : 'deposit';
+    
+    // Only WSOMI is used (no token selection)
+    const tokenSymbol = 'WSOMI';
+    
+    // Get elements based on active tab
+    const balanceEl = tabType === 'deposit'
+      ? this.bodyEl.querySelector('#lend-balance')
+      : this.bodyEl.querySelector('#lend-balance-withdraw');
+    
+    const apyEl = tabType === 'deposit'
+      ? this.bodyEl.querySelector('#pool-apy')
+      : null;
+    
+    const availableLiquidityEl = this.bodyEl.querySelector('#available-liquidity');
+
+    try {
+      let walletBalance = '0';
+      
+      if (tabType === 'deposit') {
+        // Deposit tab: show wallet balance
+        try {
+          walletBalance = await GearboxService.getWSOMIBalance(this.walletAddress) || '0';
+          if (walletBalance === '0' || parseFloat(walletBalance) === 0) {
+            try {
+              const wsttBalance = await SwapService.getBalance('WSTT', this.walletAddress) || '0';
+              if (parseFloat(wsttBalance) > 0) {
+                walletBalance = wsttBalance;
+              }
+            } catch (e) {
+              // Ignore
+            }
+          }
+        } catch (e) {
+          console.error('Error getting WSOMI balance:', e);
+          walletBalance = '0';
+        }
+        
+        if (balanceEl) {
+          const balanceNum = parseFloat(walletBalance || '0');
+          balanceEl.textContent = balanceNum.toFixed(2);
+        }
+        this.currentLendBalance = parseFloat(walletBalance || '0');
+      } else {
+        // Withdraw tab: show dWSOMI-V3-1 balance (shares balance)
+        try {
+          walletBalance = await GearboxService.getDieselBalance(tokenSymbol, this.walletAddress) || '0';
+        } catch (e) {
+          walletBalance = '0';
+        }
+        
+        if (balanceEl) {
+          const balanceNum = parseFloat(walletBalance || '0');
+          balanceEl.textContent = balanceNum.toFixed(2);
+        }
+        this.currentLendBalance = parseFloat(walletBalance || '0');
+      }
+
+      // Load pool APY
+      let apy = 0;
+      try {
+        apy = await GearboxService.getPoolAPY(tokenSymbol) || 0;
+      } catch (e) {
+        apy = 0;
+      }
+      
+      if (apyEl) {
+        apyEl.textContent = `APY: ${apy.toFixed(2)}%`;
+      }
+
+      // Load pool stats
+      try {
+        const pools = await GearboxService.getPools();
+        const pool = pools.find(p => p.token === 'WSOMI');
+        if (pool) {
+          if (apyEl) {
+            const apy = await GearboxService.getPoolAPY('WSOMI') || 0;
+            apyEl.textContent = `${apy.toFixed(0)}%`;
+          }
+          if (availableLiquidityEl) {
+            const availLiq = pool.availableLiquidity || '0';
+            const availLiqNum = parseFloat(availLiq);
+            if (availLiqNum >= 1000000) {
+              availableLiquidityEl.textContent = `${(availLiqNum / 1000000).toFixed(2)}M WSOMI`;
+            } else if (availLiqNum >= 1000) {
+              availableLiquidityEl.textContent = `${(availLiqNum / 1000).toFixed(2)}K WSOMI`;
+            } else {
+              availableLiquidityEl.textContent = `${availLiqNum.toFixed(2)} WSOMI`;
+            }
+          }
+        }
+      } catch (e) {
+        // Pool stats failed to load - set defaults
+        if (apyEl) {
+          apyEl.textContent = '0%';
+        }
+        if (availableLiquidityEl) {
+          availableLiquidityEl.textContent = '0 WSOMI';
+        }
+      }
+    } catch (error) {
+      console.error('Error loading lending data:', error);
+    }
+  }
+
+  /**
+   * Handle percent button click
+   */
+  async handleLendingPercent(percentStr) {
+    // Get active tab
+    const activeTab = this.bodyEl.querySelector('.lending-tab.active');
+    const tabType = activeTab ? activeTab.dataset.tab : 'deposit';
+    
+    const amountInput = tabType === 'deposit'
+      ? this.bodyEl.querySelector('#lend-amount')
+      : this.bodyEl.querySelector('#lend-amount-withdraw');
+    
+    if (!amountInput) return;
+
+    // For withdraw, use dWSOMI-V3-1 balance (currentLendBalance is already in dWSOMI-V3-1)
+    // For deposit, use WSOMI balance
+    const balance = this.currentLendBalance || 0;
+    
+    if (balance === 0) return;
+
+    const percent = percentStr === '100' ? 100 : parseInt(percentStr);
+    let amount = (balance * percent) / 100;
+    
+    // Reserve some for gas if native token (only for deposit)
+    if (tabType === 'deposit') {
+      const tokenSelect = this.bodyEl.querySelector('#lend-token');
+      const tokenSymbol = tokenSelect?.value;
+      if (tokenSymbol === 'STT' && percent === 100) {
+        amount = Math.max(0, amount - 0.01); // Reserve 0.01 STT for gas
+      }
+    }
+    
+    amountInput.value = amount.toFixed(4);
+    await this.updateLendingPreview();
+  }
+
+  /**
+   * Handle deposit action
+   */
+  async handleLendingDeposit(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      this.showMessage('Please connect your wallet first.', 'warning');
+      return;
+    }
+
+    const amountInput = this.bodyEl.querySelector('#lend-amount');
+    const tokenSymbol = 'WSOMI'; // Only WSOMI is used
+    const amount = amountInput?.value;
+
+    if (!amount || parseFloat(amount) <= 0) {
+      this.showMessage('Please enter a valid amount', 'error');
+      return;
+    }
+
+    const btnText = button.querySelector('.btn-text');
+    const btnLoader = button.querySelector('.btn-loader');
+    const originalText = btnText ? btnText.textContent : '';
+
+    if (btnText) btnText.classList.add('hidden');
+    if (btnLoader) btnLoader.classList.remove('hidden');
+    button.disabled = true;
+
+    try {
+      const result = await GearboxService.deposit(tokenSymbol, amount);
+
+      if (result.success) {
+        this.showXPPopup('DEPOSIT SUCCESSFUL', 75);
+        
+        // Reload data
+        setTimeout(() => {
+          this.loadLendingData();
+          if (amountInput) amountInput.value = '';
+        }, 2000);
+      }
+    } catch (error) {
+      this.showMessage(error.message, 'error');
+    } finally {
+      if (btnText) {
+        btnText.classList.remove('hidden');
+        btnText.textContent = originalText;
+      }
+      if (btnLoader) btnLoader.classList.add('hidden');
+      button.disabled = false;
+    }
+  }
+
+  /**
+   * Handle withdraw action
+   */
+  async handleLendingWithdraw(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      this.showMessage('Please connect your wallet first.', 'warning');
+      return;
+    }
+
+    const amountInput = this.bodyEl.querySelector('#lend-amount-withdraw');
+    const tokenSymbol = 'WSOMI'; // Only WSOMI is used
+    const amount = amountInput?.value;
+
+    if (!amount || parseFloat(amount) <= 0) {
+      this.showMessage('Please enter a valid amount', 'error');
+      return;
+    }
+
+    const btnText = button.querySelector('.btn-text');
+    const btnLoader = button.querySelector('.btn-loader');
+    const originalText = btnText ? btnText.textContent : '';
+
+    if (btnText) btnText.classList.add('hidden');
+    if (btnLoader) btnLoader.classList.remove('hidden');
+    button.disabled = true;
+
+    try {
+      const result = await GearboxService.withdraw(tokenSymbol, amount);
+
+      if (result.success) {
+        this.showXPPopup('WITHDRAW SUCCESSFUL', 50);
+        
+        // Reload data
+        setTimeout(() => {
+          this.loadLendingData();
+          if (amountInput) amountInput.value = '';
+        }, 2000);
+      }
+    } catch (error) {
+      this.showMessage(error.message, 'error');
+    } finally {
+      if (btnText) {
+        btnText.classList.remove('hidden');
+        btnText.textContent = originalText;
+      }
+      if (btnLoader) btnLoader.classList.add('hidden');
+      button.disabled = false;
+    }
   }
 
   destroy() {
