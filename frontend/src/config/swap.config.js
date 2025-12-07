@@ -10,23 +10,32 @@ export const SWAP_CONFIG = {
   
   // Token addresses (Somnia Testnet)
   tokens: {
-    STT: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', // Native token placeholder
-    WSTT: '0xF22eF0085f6511f70b01a68F360dCc56261F768a', // Wrapped STT
-    USDT: '0xDa4FDE38bE7a2b959BF46E032ECfA21e64019b76', // USDT on Somnia
+    STT: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', // Native token placeholder (Testnet)
+    WSTT: '0xF22eF0085f6511f70b01a68F360dCc56261F768a', // Wrapped STT (Testnet)
+    USDT: '0xDa4FDE38bE7a2b959BF46E032ECfA21e64019b76', // USDT on Somnia (Testnet)
     USDC: '0x0000000000000000000000000000000000000000', // USDC placeholder
-    WETH: '0x0000000000000000000000000000000000000000'  // WETH placeholder
+    WETH: '0x0000000000000000000000000000000000000000', // WETH placeholder
+    // Mainnet tokens
+    SOMI: '0xeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee', // Native SOMI (Mainnet)
+    WSOMI: '0x046EDe9564A72571df6F5e44d0405360c0f4dCab' // Wrapped SOMI (Mainnet) - WETH9 contract
   },
+  
+  // WETH9 contract for wrapping native SOMI to WSOMI (Mainnet)
+  weth9Contract: '0x046EDe9564A72571df6F5e44d0405360c0f4dCab',
   
   // Token display info
   tokenInfo: {
     STT: { symbol: 'STT', name: 'Somnia Token', icon: '◈', decimals: 18 },
     WSTT: { symbol: 'WSTT', name: 'Wrapped STT', icon: '◈', decimals: 18 },
-    USDT: { symbol: 'USDT', name: 'Tether USD', icon: '$', decimals: 18 }
+    USDT: { symbol: 'USDT', name: 'Tether USD', icon: '$', decimals: 18 },
+    SOMI: { symbol: 'SOMI', name: 'Somnia Token', icon: '◈', decimals: 18 },
+    WSOMI: { symbol: 'WSOMI', name: 'Wrapped Somnia Token', icon: '◈', decimals: 18 }
   },
   
   // Supported swap pairs (for UI dropdown)
-  // Only tokens with valid addresses on Somnia Testnet
-  supportedTokens: ['STT', 'USDT'],
+  // Testnet: STT ↔ USDT
+  // Mainnet: SOMI ↔ WSOMI (wrapping)
+  supportedTokens: ['STT', 'USDT', 'SOMI', 'WSOMI'],
   
   // Swap settings
   settings: {
@@ -40,7 +49,9 @@ export const SWAP_CONFIG = {
   // Based on actual swap: 2 STT → 7.08 USDT (1 STT ≈ 3.54 USDT)
   fallbackRates: {
     'STT-USDT': 3.5,     // 1 STT = 3.5 USDT
-    'USDT-STT': 0.285    // 1 USDT = 0.285 STT
+    'USDT-STT': 0.285,   // 1 USDT = 0.285 STT
+    'SOMI-WSOMI': 1.0,   // 1 SOMI = 1 WSOMI (1:1 wrapping)
+    'WSOMI-SOMI': 1.0    // 1 WSOMI = 1 SOMI (1:1 unwrapping)
   }
 };
 
@@ -84,6 +95,19 @@ export const UNISWAP_ROUTER_ABI = [
   'function swapETHForExactTokens(uint amountOut, address[] calldata path, address to, uint deadline) payable returns (uint[] memory amounts)',
   'function swapTokensForExactETH(uint amountOut, uint amountIn, address[] calldata path, address to, uint deadline) returns (uint[] memory amounts)',
   'function swapTokensForExactTokens(uint amountOut, uint amountInMax, address[] calldata path, address to, uint deadline) returns (uint[] memory amounts)'
+];
+
+// WETH9 ABI (for wrapping/unwrapping native tokens)
+export const WETH9_ABI = [
+  'function deposit() payable returns (uint256)',
+  'function withdraw(uint256 amount) returns (uint256)',
+  'function balanceOf(address owner) view returns (uint256)',
+  'function allowance(address owner, address spender) view returns (uint256)',
+  'function approve(address spender, uint256 amount) returns (bool)',
+  'function transfer(address to, uint256 amount) returns (bool)',
+  'function symbol() view returns (string)',
+  'function decimals() view returns (uint8)',
+  'function totalSupply() view returns (uint256)'
 ];
 
 export default SWAP_CONFIG;

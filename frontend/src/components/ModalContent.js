@@ -13,18 +13,32 @@ import { GEARBOX_CONFIG } from '../config/gearbox.config.js';
  * Generate Swap UI content
  * @param {string} walletAddress - Connected wallet address (optional)
  */
-export function generateSwapContent(walletAddress = null) {
-  const tokens = SwapService.getSupportedTokens();
+export async function generateSwapContent(walletAddress = null) {
+  const tokens = await SwapService.getSupportedTokens();
   const settings = SwapService.getSettings();
+  
+  // Determine default tokens based on network
+  const isMainnet = await SwapService.isMainnet();
+  const defaultFrom = isMainnet ? 'SOMI' : 'STT';
+  const defaultTo = isMainnet ? 'WSOMI' : 'USDT';
   
   // Generate token options HTML
   const tokenOptionsFrom = tokens.map(t => 
-    `<option value="${t.symbol}" ${t.symbol === 'STT' ? 'selected' : ''}>${t.symbol}</option>`
+    `<option value="${t.symbol}" ${t.symbol === defaultFrom ? 'selected' : ''}>${t.symbol}</option>`
   ).join('');
   
   const tokenOptionsTo = tokens.map(t => 
-    `<option value="${t.symbol}" ${t.symbol === 'USDT' ? 'selected' : ''}>${t.symbol}</option>`
+    `<option value="${t.symbol}" ${t.symbol === defaultTo ? 'selected' : ''}>${t.symbol}</option>`
   ).join('');
+  
+  // Network switch button styles
+  const mainnetBtnStyle = isMainnet 
+    ? 'padding: 6px 20px; background: rgba(var(--theme-rgb), 0.2); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;'
+    : 'padding: 6px 20px; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.5); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;';
+  
+  const testnetBtnStyle = !isMainnet
+    ? 'padding: 6px 20px; background: rgba(var(--theme-rgb), 0.2); border: 1px solid var(--theme-color); color: var(--theme-color); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;'
+    : 'padding: 6px 20px; background: transparent; border: 1px solid rgba(255,255,255,0.3); color: rgba(255,255,255,0.5); border-radius: 4px; cursor: pointer; font-family: \'Courier New\', monospace; font-size: 0.85em; text-transform: uppercase; transition: all 0.3s;';
 
   const isConnected = !!walletAddress;
   const buttonText = isConnected ? 'SWAP TOKENS' : 'CONNECT WALLET';
@@ -206,8 +220,15 @@ export function generateSwapContent(walletAddress = null) {
     </style>
 
     <div class="swap-container">
-      <div class="swap-status ${isConnected ? 'ready' : 'not-connected'}">
-        ${isConnected ? '● READY TO SWAP' : '○ WALLET NOT CONNECTED'}
+      <!-- Network Switch -->
+      <div class="network-switch-container" style="display: flex; justify-content: center; align-items: center; gap: 10px; margin-bottom: 15px; padding: 8px; background: rgba(0,0,0,0.3); border-radius: 4px;">
+        <span style="font-size: 0.8em; color: rgba(255,255,255,0.7); font-family: 'Courier New', monospace;">NETWORK:</span>
+        <button class="network-switch-btn" data-network="mainnet" style="${mainnetBtnStyle}">
+          MAINNET
+        </button>
+        <button class="network-switch-btn" data-network="testnet" style="${testnetBtnStyle}">
+          TESTNET
+        </button>
       </div>
 
       <div class="swap-box from-box">

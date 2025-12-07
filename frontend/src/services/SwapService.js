@@ -4,7 +4,7 @@
  */
 import { ethers } from 'ethers';
 import { NETWORK_CONFIG } from '../config/network.config.js';
-import { SWAP_CONFIG, ERC20_ABI, UNISWAP_ROUTER_ABI, UNISWAP_FACTORY_ABI, UNISWAP_PAIR_ABI } from '../config/swap.config.js';
+import { SWAP_CONFIG, ERC20_ABI, UNISWAP_ROUTER_ABI, UNISWAP_FACTORY_ABI, UNISWAP_PAIR_ABI, WETH9_ABI } from '../config/swap.config.js';
 import { ProfileService } from './ProfileService.js';
 
 class SwapServiceClass {
@@ -106,16 +106,35 @@ class SwapServiceClass {
 
   /**
    * Get user's token balance
-   * @param {string} tokenSymbol - Token symbol (STT, USDT, etc.)
+   * @param {string} tokenSymbol - Token symbol (STT, USDT, SOMI, WSOMI, etc.)
    * @param {string} userAddress - User wallet address
    */
   async getBalance(tokenSymbol, userAddress) {
     if (!userAddress) return '0';
 
     try {
-      const provider = this.getProvider();
+      // Determine which network/provider to use based on token
+      const isMainnet = await this.isMainnet();
+      let provider;
+      
+      // Mainnet tokens (SOMI, WSOMI) use mainnet RPC
+      if (tokenSymbol === 'SOMI' || tokenSymbol === 'WSOMI') {
+        provider = new ethers.JsonRpcProvider('https://api.infra.mainnet.somnia.network');
+      } 
+      // Testnet tokens (STT, USDT) use testnet RPC
+      else if (tokenSymbol === 'STT' || tokenSymbol === 'USDT') {
+        provider = this.getProvider(); // Testnet RPC
+      } else {
+        // Unknown token, try to determine from network
+        if (isMainnet) {
+          provider = new ethers.JsonRpcProvider('https://api.infra.mainnet.somnia.network');
+        } else {
+          provider = this.getProvider();
+        }
+      }
 
-      if (tokenSymbol === 'STT') {
+      // Native tokens (STT on testnet, SOMI on mainnet)
+      if (tokenSymbol === 'STT' || tokenSymbol === 'SOMI') {
         // Native token balance
         const balance = await provider.getBalance(userAddress);
         return ethers.formatUnits(balance, 18);
@@ -505,10 +524,22 @@ class SwapServiceClass {
   }
 
   /**
-   * Get supported tokens list
+   * Get supported tokens list (filtered by network)
    */
-  getSupportedTokens() {
-    return SWAP_CONFIG.supportedTokens.map(symbol => ({
+  async getSupportedTokens() {
+    const isMainnet = await this.isMainnet();
+    
+    // Filter tokens based on network
+    let tokens;
+    if (isMainnet) {
+      // Mainnet: Only SOMI and WSOMI
+      tokens = ['SOMI', 'WSOMI'];
+    } else {
+      // Testnet: Only STT and USDT
+      tokens = ['STT', 'USDT'];
+    }
+    
+    return tokens.map(symbol => ({
       symbol,
       ...SWAP_CONFIG.tokenInfo[symbol]
     }));
@@ -519,6 +550,240 @@ class SwapServiceClass {
    */
   getSettings() {
     return SWAP_CONFIG.settings;
+  }
+
+  /**
+   * Check if current network is mainnet (chainId 5031)
+   */
+  async isMainnet() {
+    if (!window.ethereum) return false;
+    try {
+      const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+      const currentChainId = parseInt(chainIdHex, 16);
+      return currentChainId === 5031; // Somnia Mainnet
+    } catch (error) {
+      return false;
+    }
+  }
+
+  /**
+   * Wrap native SOMI to WSOMI (Mainnet only)
+   * @param {string} amount - Amount of SOMI to wrap
+   */
+  async wrapSOMI(amount) {
+    const userAddress = await this.getWalletAddress();
+    if (!userAddress) {
+      throw new Error('Please connect your wallet first');
+    }
+
+    // Ensure MetaMask is on Somnia Mainnet (will switch automatically if needed)
+    const targetChainId = 5031;
+    if (!window.ethereum) {
+      throw new Error('No wallet detected');
+    }
+
+    const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+    const currentChainId = parseInt(chainIdHex, 16);
+
+    if (currentChainId !== targetChainId) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + targetChainId.toString(16) }]
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x' + targetChainId.toString(16),
+              chainName: 'Somnia Mainnet',
+              rpcUrls: ['https://api.infra.mainnet.somnia.network'],
+              nativeCurrency: {
+                name: 'Somnia Token',
+                symbol: 'SOMI',
+                decimals: 18
+              },
+              blockExplorerUrls: ['https://explorer.somnia.network']
+            }]
+          });
+        } else {
+          throw new Error('Please switch to Somnia Mainnet in your wallet');
+        }
+      }
+    }
+
+    const signer = await this.getSigner();
+    const weth9Address = ethers.getAddress(SWAP_CONFIG.weth9Contract);
+    const weth9Contract = new ethers.Contract(weth9Address, WETH9_ABI, signer);
+
+    const amountIn = ethers.parseUnits(amount.toString(), 18);
+
+    // Check native SOMI balance
+    const provider = new ethers.JsonRpcProvider('https://api.infra.mainnet.somnia.network');
+    const balance = await provider.getBalance(userAddress);
+    if (balance < amountIn) {
+      throw new Error('Insufficient SOMI balance');
+    }
+
+    try {
+      // Call deposit() function with native SOMI as value
+      const wrapTx = await weth9Contract.deposit({
+        value: amountIn
+      });
+
+      // Wait for confirmation
+      const receipt = await wrapTx.wait();
+
+      if (receipt.status !== 1) {
+        throw new Error('Transaction failed');
+      }
+
+      // Add XP reward
+      const xpReward = SWAP_CONFIG.settings.xpReward;
+      ProfileService.addXP(userAddress, xpReward);
+      ProfileService.updateStats(userAddress, 'swapsCompleted');
+
+      // Dispatch success event
+      window.dispatchEvent(new CustomEvent('swapCompleted', {
+        detail: {
+          fromToken: 'SOMI',
+          toToken: 'WSOMI',
+          amount,
+          outputAmount: amount, // 1:1 wrapping
+          txHash: wrapTx.hash,
+          xpReward
+        }
+      }));
+
+      return {
+        success: true,
+        message: `Successfully wrapped ${amount} SOMI to ${amount} WSOMI!`,
+        txHash: wrapTx.hash,
+        outputAmount: amount
+      };
+
+    } catch (error) {
+      console.error('Wrap error:', error);
+
+      let message = error.message;
+      if (message.includes('insufficient funds')) {
+        message = 'Insufficient funds for gas';
+      } else if (message.includes('user rejected')) {
+        message = 'Transaction rejected by user';
+      }
+
+      throw new Error(message);
+    }
+  }
+
+  /**
+   * Unwrap WSOMI to native SOMI (Mainnet only)
+   * @param {string} amount - Amount of WSOMI to unwrap
+   */
+  async unwrapWSOMI(amount) {
+    const userAddress = await this.getWalletAddress();
+    if (!userAddress) {
+      throw new Error('Please connect your wallet first');
+    }
+
+    // Ensure MetaMask is on Somnia Mainnet (will switch automatically if needed)
+    const targetChainId = 5031;
+    if (!window.ethereum) {
+      throw new Error('No wallet detected');
+    }
+
+    const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+    const currentChainId = parseInt(chainIdHex, 16);
+
+    if (currentChainId !== targetChainId) {
+      try {
+        await window.ethereum.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: '0x' + targetChainId.toString(16) }]
+        });
+      } catch (switchError) {
+        if (switchError.code === 4902) {
+          await window.ethereum.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: '0x' + targetChainId.toString(16),
+              chainName: 'Somnia Mainnet',
+              rpcUrls: ['https://api.infra.mainnet.somnia.network'],
+              nativeCurrency: {
+                name: 'Somnia Token',
+                symbol: 'SOMI',
+                decimals: 18
+              },
+              blockExplorerUrls: ['https://explorer.somnia.network']
+            }]
+          });
+        } else {
+          throw new Error('Please switch to Somnia Mainnet in your wallet');
+        }
+      }
+    }
+
+    const signer = await this.getSigner();
+    const weth9Address = ethers.getAddress(SWAP_CONFIG.weth9Contract);
+    const weth9Contract = new ethers.Contract(weth9Address, WETH9_ABI, signer);
+
+    const amountIn = ethers.parseUnits(amount.toString(), 18);
+
+    // Check WSOMI balance
+    const provider = new ethers.JsonRpcProvider('https://api.infra.mainnet.somnia.network');
+    const balance = await weth9Contract.balanceOf(userAddress);
+    if (balance < amountIn) {
+      throw new Error('Insufficient WSOMI balance');
+    }
+
+    try {
+      // Call withdraw() function
+      const unwrapTx = await weth9Contract.withdraw(amountIn);
+
+      // Wait for confirmation
+      const receipt = await unwrapTx.wait();
+
+      if (receipt.status !== 1) {
+        throw new Error('Transaction failed');
+      }
+
+      // Add XP reward
+      const xpReward = SWAP_CONFIG.settings.xpReward;
+      ProfileService.addXP(userAddress, xpReward);
+      ProfileService.updateStats(userAddress, 'swapsCompleted');
+
+      // Dispatch success event
+      window.dispatchEvent(new CustomEvent('swapCompleted', {
+        detail: {
+          fromToken: 'WSOMI',
+          toToken: 'SOMI',
+          amount,
+          outputAmount: amount, // 1:1 unwrapping
+          txHash: unwrapTx.hash,
+          xpReward
+        }
+      }));
+
+      return {
+        success: true,
+        message: `Successfully unwrapped ${amount} WSOMI to ${amount} SOMI!`,
+        txHash: unwrapTx.hash,
+        outputAmount: amount
+      };
+
+    } catch (error) {
+      console.error('Unwrap error:', error);
+
+      let message = error.message;
+      if (message.includes('insufficient funds')) {
+        message = 'Insufficient funds for gas';
+      } else if (message.includes('user rejected')) {
+        message = 'Transaction rejected by user';
+      }
+
+      throw new Error(message);
+    }
   }
 }
 

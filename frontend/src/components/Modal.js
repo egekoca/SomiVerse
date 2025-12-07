@@ -145,13 +145,19 @@ export class Modal {
 
     // Initialize swap UI if needed
     if (type === 'SWAP') {
-      this.initSwapUI();
+      // initSwapUI will be called after content is loaded
+      setTimeout(async () => await this.initSwapUI(), 100);
     }
 
     // Initialize lending UI if needed
     if (type === 'LEND') {
       this.initLendingUI();
       // Hide footer for lending modal
+      if (this.footerEl) {
+        this.footerEl.style.display = 'none';
+      }
+    } else if (type === 'SWAP') {
+      // Hide footer for swap modal
       if (this.footerEl) {
         this.footerEl.style.display = 'none';
       }
@@ -212,8 +218,11 @@ export class Modal {
   /**
    * Initialize Swap UI event listeners
    */
-  initSwapUI() {
+  async initSwapUI() {
     SwapService.init();
+    
+    // Initialize network switch
+    await this.initNetworkSwitch();
     
     // Load balances if wallet connected
     this.loadSwapBalances();
@@ -257,6 +266,147 @@ export class Modal {
         this.handleSwapPercent(percent);
       });
     });
+  }
+
+  /**
+   * Initialize network switch for swap UI
+   */
+  async initNetworkSwitch() {
+    const networkButtons = this.bodyEl.querySelectorAll('.network-switch-btn');
+    if (!networkButtons.length) return;
+
+    // Determine current network
+    const isMainnet = await SwapService.isMainnet();
+    const currentNetwork = isMainnet ? 'mainnet' : 'testnet';
+
+    // Update button states
+    networkButtons.forEach(btn => {
+      const network = btn.dataset.network;
+      if (network === currentNetwork) {
+        btn.style.background = 'rgba(var(--theme-rgb), 0.2)';
+        btn.style.border = '1px solid var(--theme-color)';
+        btn.style.color = 'var(--theme-color)';
+      } else {
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid rgba(255,255,255,0.3)';
+        btn.style.color = 'rgba(255,255,255,0.5)';
+      }
+
+      // Add click handler
+      btn.addEventListener('click', async () => {
+        await this.handleNetworkSwitch(network);
+      });
+    });
+  }
+
+  /**
+   * Handle network switch
+   */
+  async handleNetworkSwitch(targetNetwork) {
+    const networkButtons = this.bodyEl.querySelectorAll('.network-switch-btn');
+    
+    // If switching to mainnet, try to switch wallet network
+    if (targetNetwork === 'mainnet') {
+      try {
+        const targetChainId = 5031;
+        if (window.ethereum) {
+          const chainIdHex = await window.ethereum.request({ method: 'eth_chainId' });
+          const currentChainId = parseInt(chainIdHex, 16);
+          
+          if (currentChainId !== targetChainId) {
+            try {
+              await window.ethereum.request({
+                method: 'wallet_switchEthereumChain',
+                params: [{ chainId: '0x' + targetChainId.toString(16) }]
+              });
+            } catch (switchError) {
+              if (switchError.code === 4902) {
+                await window.ethereum.request({
+                  method: 'wallet_addEthereumChain',
+                  params: [{
+                    chainId: '0x' + targetChainId.toString(16),
+                    chainName: 'Somnia Mainnet',
+                    rpcUrls: ['https://api.infra.mainnet.somnia.network'],
+                    nativeCurrency: {
+                      name: 'Somnia Token',
+                      symbol: 'SOMI',
+                      decimals: 18
+                    },
+                    blockExplorerUrls: ['https://explorer.somnia.network']
+                  }]
+                });
+              } else {
+                // User rejected or error, but continue with UI update
+                console.warn('Could not switch to mainnet:', switchError);
+              }
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('Network switch error:', error);
+        // Continue with UI update even if network switch fails
+      }
+    }
+    
+    // Update button states
+    networkButtons.forEach(btn => {
+      const network = btn.dataset.network;
+      if (network === targetNetwork) {
+        btn.style.background = 'rgba(var(--theme-rgb), 0.2)';
+        btn.style.border = '1px solid var(--theme-color)';
+        btn.style.color = 'var(--theme-color)';
+      } else {
+        btn.style.background = 'transparent';
+        btn.style.border = '1px solid rgba(255,255,255,0.3)';
+        btn.style.color = 'rgba(255,255,255,0.5)';
+      }
+    });
+
+    // Update token options based on network
+    await this.updateTokenOptions(targetNetwork);
+    
+    // Reload balances
+    this.loadSwapBalances();
+    
+    // Clear inputs and quotes
+    const fromAmountInput = this.bodyEl.querySelector('#from-amount');
+    const toAmountInput = this.bodyEl.querySelector('#to-amount');
+    const quoteInfo = this.bodyEl.querySelector('#quote-info');
+    if (fromAmountInput) fromAmountInput.value = '';
+    if (toAmountInput) toAmountInput.value = '';
+    if (quoteInfo) quoteInfo.classList.add('hidden');
+  }
+
+  /**
+   * Update token options based on selected network
+   */
+  async updateTokenOptions(network) {
+    const fromTokenSelect = this.bodyEl.querySelector('#from-token');
+    const toTokenSelect = this.bodyEl.querySelector('#to-token');
+    
+    if (!fromTokenSelect || !toTokenSelect) return;
+
+    // Get tokens for selected network
+    const isMainnet = network === 'mainnet';
+    const tokens = isMainnet ? ['SOMI', 'WSOMI'] : ['STT', 'USDT'];
+    const defaultFrom = isMainnet ? 'SOMI' : 'STT';
+    const defaultTo = isMainnet ? 'WSOMI' : 'USDT';
+
+    // Update from token select
+    fromTokenSelect.innerHTML = tokens.map(symbol => {
+      const selected = symbol === defaultFrom ? 'selected' : '';
+      return `<option value="${symbol}" ${selected}>${symbol}</option>`;
+    }).join('');
+
+    // Update to token select
+    toTokenSelect.innerHTML = tokens.map(symbol => {
+      const selected = symbol === defaultTo ? 'selected' : '';
+      return `<option value="${symbol}" ${selected}>${symbol}</option>`;
+    }).join('');
+
+    // Trigger change events
+    fromTokenSelect.dispatchEvent(new Event('change'));
+    toTokenSelect.dispatchEvent(new Event('change'));
   }
 
   /**
@@ -360,7 +510,25 @@ export class Modal {
     }
 
     try {
-      const quote = await SwapService.getSwapQuote(fromToken, toToken, amount);
+      let quote;
+      
+      // Check if this is a wrapping/unwrapping operation (Mainnet)
+      if ((fromToken === 'SOMI' && toToken === 'WSOMI') || (fromToken === 'WSOMI' && toToken === 'SOMI')) {
+        // 1:1 wrapping/unwrapping
+        quote = {
+          fromToken,
+          toToken,
+          inputAmount: amount,
+          outputAmount: amount, // 1:1 rate
+          rate: '1.0',
+          priceImpact: '< 0.01%',
+          fee: '0',
+          estimated: false
+        };
+      } else {
+        // Regular swap quote
+        quote = await SwapService.getSwapQuote(fromToken, toToken, amount);
+      }
 
       // Update output amount
       if (toAmountInput) {
@@ -380,7 +548,13 @@ export class Modal {
         rateEl.innerHTML = rateText;
       }
       if (impactEl) impactEl.textContent = quote.priceImpact;
-      if (feeEl) feeEl.textContent = `${quote.fee} ${fromToken}`;
+      if (feeEl) {
+        if (fromToken === 'SOMI' || fromToken === 'WSOMI') {
+          feeEl.textContent = 'Network fee only';
+        } else {
+          feeEl.textContent = `${quote.fee} ${fromToken}`;
+        }
+      }
 
       // Show quote info
       if (quoteInfo) quoteInfo.classList.remove('hidden');
@@ -389,7 +563,15 @@ export class Modal {
       if (swapBtn && this.walletAddress) {
         swapBtn.disabled = false;
         const btnText = swapBtn.querySelector('.btn-text');
-        if (btnText) btnText.textContent = 'SWAP TOKENS';
+        if (btnText) {
+          if (fromToken === 'SOMI' && toToken === 'WSOMI') {
+            btnText.textContent = 'WRAP SOMI';
+          } else if (fromToken === 'WSOMI' && toToken === 'SOMI') {
+            btnText.textContent = 'UNWRAP WSOMI';
+          } else {
+            btnText.textContent = 'SWAP TOKENS';
+          }
+        }
       }
 
     } catch (error) {
@@ -436,7 +618,19 @@ export class Modal {
     button.disabled = true;
 
     try {
-      const result = await SwapService.swapTokens(fromToken, toToken, amount);
+      let result;
+
+      // Check if this is a wrapping/unwrapping operation (Mainnet)
+      if (fromToken === 'SOMI' && toToken === 'WSOMI') {
+        // Wrap native SOMI to WSOMI
+        result = await SwapService.wrapSOMI(amount);
+      } else if (fromToken === 'WSOMI' && toToken === 'SOMI') {
+        // Unwrap WSOMI to native SOMI
+        result = await SwapService.unwrapWSOMI(amount);
+      } else {
+        // Regular swap (Testnet: STT ↔ USDT)
+        result = await SwapService.swapTokens(fromToken, toToken, amount);
+      }
 
       if (result.success) {
         // Show XP Popup
@@ -687,8 +881,8 @@ export class Modal {
    */
   async refreshSwapContent() {
     const { generateSwapContent } = await import('./ModalContent.js');
-    this.bodyEl.innerHTML = generateSwapContent(this.walletAddress);
-    this.initSwapUI();
+    this.bodyEl.innerHTML = await generateSwapContent(this.walletAddress);
+    await this.initSwapUI();
   }
 
   /**

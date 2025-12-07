@@ -82,7 +82,7 @@ export class InteractionSystem {
     this.actionButton.setText('CONNECT: ' + building.title);
   }
 
-  interact() {
+  async interact() {
     if (!this.activeBuilding) return false;
 
     const building = this.activeBuilding;
@@ -90,10 +90,19 @@ export class InteractionSystem {
     // Generate content based on building type
     // Faucet (CLAIM), Swap (SWAP), and Lending (LEND) need wallet address
     let content;
-    if (building.type === 'CLAIM' || building.type === 'SWAP' || building.type === 'LEND') {
-      content = building.contentGenerator(this.walletAddress);
-    } else {
-      content = building.contentGenerator();
+    try {
+      if (building.type === 'CLAIM' || building.type === 'SWAP' || building.type === 'LEND') {
+        // Try to await (works for both sync and async functions)
+        const result = building.contentGenerator(this.walletAddress);
+        content = result instanceof Promise ? await result : result;
+      } else {
+        const result = building.contentGenerator();
+        content = result instanceof Promise ? await result : result;
+      }
+    } catch (error) {
+      console.error('Error generating content:', error);
+      // Fallback to empty content or error message
+      content = '<div>Error loading content. Please try again.</div>';
     }
 
     // Open modal with type for action handling
