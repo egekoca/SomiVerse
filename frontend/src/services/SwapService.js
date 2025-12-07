@@ -329,14 +329,16 @@ class SwapServiceClass {
 
     const amountIn = ethers.parseUnits(amount.toString(), 18);
 
-    // Check balance
+    // Check balance using Somnia RPC (not MetaMask's network)
+    const somniaProvider = this.getProvider();
+    
     if (fromToken === 'STT') {
-      const balance = await signer.provider.getBalance(userAddress);
+      const balance = await somniaProvider.getBalance(userAddress);
       if (balance < amountIn) {
         throw new Error('Insufficient STT balance');
       }
     } else {
-      const tokenContract = new ethers.Contract(tokenInAddress, ERC20_ABI, signer);
+      const tokenContract = new ethers.Contract(tokenInAddress, ERC20_ABI, somniaProvider);
       const balance = await tokenContract.balanceOf(userAddress);
       if (balance < amountIn) {
         throw new Error(`Insufficient ${fromToken} balance`);
