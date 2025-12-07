@@ -33,24 +33,33 @@ class SwapServiceClass {
   }
 
   /**
-   * Get provider (connected wallet or read-only)
+   * Get read-only provider (always uses Somnia RPC)
+   * For balance checks and quotes - ensures correct network
    */
   getProvider() {
+    // Always use Somnia RPC for read operations to ensure correct network
+    return new ethers.JsonRpcProvider(NETWORK_CONFIG.rpcUrl);
+  }
+  
+  /**
+   * Get browser provider (MetaMask) for transactions
+   */
+  getBrowserProvider() {
     if (window.ethereum) {
       return new ethers.BrowserProvider(window.ethereum);
     }
-    return this.provider || new ethers.JsonRpcProvider(NETWORK_CONFIG.rpcUrl);
+    return null;
   }
 
   /**
-   * Get signer from connected wallet
+   * Get signer from connected wallet (for transactions)
    */
   async getSigner() {
-    if (!window.ethereum) {
+    const browserProvider = this.getBrowserProvider();
+    if (!browserProvider) {
       throw new Error('No wallet detected');
     }
-    const provider = new ethers.BrowserProvider(window.ethereum);
-    return await provider.getSigner();
+    return await browserProvider.getSigner();
   }
 
   /**
