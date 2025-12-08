@@ -667,24 +667,344 @@ export function generateFaucetContent(walletAddress = null) {
 
 /**
  * Somnia Domain Service content
+ * Two tabs: Register Domain and Domain Management
  */
-export function generateDomainContent(walletAddress = null) {
+export async function generateDomainContent(walletAddress = null) {
   const isConnected = !!walletAddress;
+  
   return `
+    <style>
+      .domain-container {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      .domain-tabs {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 15px;
+        border-bottom: 1px solid rgba(255,255,255,0.1);
+      }
+      .domain-tab {
+        flex: 1;
+        padding: 10px;
+        background: transparent;
+        border: none;
+        border-bottom: 2px solid transparent;
+        color: rgba(255,255,255,0.5);
+        cursor: pointer;
+        font-family: 'Courier New', monospace;
+        font-size: 0.9em;
+        text-transform: uppercase;
+        transition: all 0.3s;
+      }
+      .domain-tab.active {
+        border-bottom-color: var(--theme-color, #aa00ff);
+        color: var(--theme-color, #aa00ff);
+      }
+      .domain-tab:hover {
+        color: var(--theme-color, #aa00ff);
+      }
+      .domain-tab-content {
+        display: none;
+      }
+      .domain-tab-content.active {
+        display: block;
+      }
+      .domain-input-container {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(var(--theme-rgb), 0.3);
+        padding: 12px;
+        border-radius: 4px;
+        margin-bottom: 15px;
+      }
+      .domain-input-row {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border: 1px solid rgba(var(--theme-rgb), 0.5);
+        padding: 10px;
+        border-radius: 4px;
+      }
+      .domain-input-row:focus-within {
+        border-color: var(--theme-color, #aa00ff);
+        box-shadow: 0 0 10px rgba(var(--theme-rgb), 0.2);
+      }
+      .domain-input {
+        background: transparent;
+        border: none;
+        color: #fff;
+        font-size: 1.1em;
+        flex: 1;
+        font-family: 'Courier New', monospace;
+        outline: none;
+      }
+      .domain-suffix {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(var(--theme-rgb), 0.3);
+        color: var(--theme-color, #aa00ff);
+        padding: 8px 15px;
+        border-radius: 4px;
+        font-weight: bold;
+        font-family: 'Courier New', monospace;
+        white-space: nowrap;
+      }
+      .domain-hint {
+        font-size: 0.75em;
+        color: rgba(255, 255, 255, 0.5);
+        margin-top: 8px;
+        font-family: 'Courier New', monospace;
+      }
+      .domain-status {
+        text-align: center;
+        padding: 8px;
+        margin-bottom: 10px;
+        border-radius: 4px;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+      }
+      .domain-status.available {
+        background: rgba(0, 255, 170, 0.1);
+        border: 1px solid rgba(0, 255, 170, 0.3);
+        color: #00ffaa;
+      }
+      .domain-status.unavailable {
+        background: rgba(255, 0, 85, 0.1);
+        border: 1px solid rgba(255, 0, 85, 0.3);
+        color: #ff0055;
+      }
+      .domain-status.checking {
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        color: #ffaa00;
+      }
+      .domain-status.not-connected {
+        background: rgba(255, 170, 0, 0.1);
+        border: 1px solid rgba(255, 170, 0, 0.3);
+        color: #ffaa00;
+      }
+      .domain-register-btn {
+        width: 100%;
+        padding: 15px;
+        font-size: 1.1em;
+        margin-top: 10px;
+      }
+      .domain-register-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .domain-cost {
+        text-align: center;
+        margin-top: 10px;
+        font-size: 0.9em;
+        color: rgba(255, 255, 255, 0.7);
+        font-family: 'Courier New', monospace;
+      }
+      .domain-cost strong {
+        color: var(--theme-color, #aa00ff);
+      }
+      .domain-list {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+      .domain-item {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(var(--theme-rgb), 0.3);
+        padding: 20px;
+        border-radius: 8px;
+        margin-bottom: 15px;
+      }
+      .domain-item-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 12px;
+      }
+      .domain-name-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .domain-name {
+        font-size: 1.3em;
+        font-weight: bold;
+        color: var(--theme-color, #aa00ff);
+        font-family: 'Courier New', monospace;
+      }
+      .domain-name.primary {
+        color: var(--theme-color, #aa00ff);
+      }
+      .domain-primary-badge {
+        background: transparent;
+        color: var(--theme-color, #aa00ff);
+        padding: 0;
+        font-size: 0.9em;
+        font-family: 'Courier New', monospace;
+        font-weight: normal;
+      }
+      .domain-expiry {
+        font-size: 0.9em;
+        color: rgba(255, 255, 255, 0.7);
+        margin-bottom: 15px;
+        font-family: 'Courier New', monospace;
+        display: flex;
+        align-items: center;
+        gap: 6px;
+      }
+      .domain-expiry::before {
+        content: '📅';
+        font-size: 1em;
+      }
+      .domain-actions-row {
+        display: flex;
+        gap: 12px;
+      }
+      .domain-action-btn {
+        flex: 1;
+        padding: 12px 20px;
+        font-size: 0.95em;
+        border-radius: 6px;
+        font-family: 'Courier New', monospace;
+        font-weight: bold;
+        cursor: pointer;
+        transition: all 0.3s;
+        border: none;
+      }
+      .domain-action-btn.set-primary {
+        background: #0066ff;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      .domain-action-btn.set-primary:hover:not(:disabled) {
+        background: #0052cc;
+        transform: translateY(-1px);
+      }
+      .domain-action-btn.set-primary:disabled {
+        background: rgba(255, 255, 255, 0.1);
+        color: rgba(255, 255, 255, 0.5);
+        cursor: not-allowed;
+      }
+      .domain-action-btn.renew {
+        background: var(--theme-color, #aa00ff);
+        color: #fff;
+      }
+      .domain-action-btn.renew:hover {
+        background: #8800cc;
+        transform: translateY(-1px);
+      }
+      .domain-action-btn.secondary {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.3);
+        color: #fff;
+      }
+      .domain-action-btn.secondary:hover {
+        background: rgba(255, 255, 255, 0.2);
+      }
+      .domain-action-btn:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      .domain-refresh-btn {
+        background: transparent;
+        border: 1px solid rgba(var(--theme-rgb), 0.3);
+        color: var(--theme-color, #aa00ff);
+        padding: 8px 15px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-family: 'Courier New', monospace;
+        font-size: 0.85em;
+        transition: all 0.3s;
+      }
+      .domain-refresh-btn:hover {
+        background: rgba(var(--theme-rgb), 0.2);
+        border-color: var(--theme-color, #aa00ff);
+      }
+      .domain-empty {
+        text-align: center;
+        padding: 40px 20px;
+        color: rgba(255, 255, 255, 0.5);
+        font-family: 'Courier New', monospace;
+      }
+    </style>
+
     <div class="domain-container">
-      <div class="domain-header">
-        <div class="domain-title">Somnia Domain Service</div>
-        <div class="domain-subtitle">Claim your .somi identity</div>
+      <!-- Tabs -->
+      <div class="domain-tabs">
+        <button class="domain-tab active" data-tab="register">
+          + Register Domain
+        </button>
+        <button class="domain-tab" data-tab="management">
+          Domain Management
+        </button>
       </div>
-      <div class="domain-body">
-        <div class="domain-description">
-          Reserve a unique .somi name linked to your wallet. Connect to check availability and register.
+
+      <!-- Register Tab -->
+      <div class="domain-tab-content active" data-content="register">
+        <div class="domain-input-container">
+          <div class="domain-input-row">
+            <input 
+              type="text" 
+              class="domain-input" 
+              id="domain-name-input" 
+              placeholder="e.g., mydomain (only letters, numbers, hyphens)"
+              maxlength="63"
+            >
+            <div class="domain-suffix">.somi</div>
+          </div>
+          <div class="domain-hint">
+            Only letters (a-z), numbers (0-9), and hyphens (-) are allowed. Special characters will be removed.
+          </div>
         </div>
-        <div class="domain-actions">
-          <button class="primary-btn domain-btn" data-action="domain-connect">
-            ${isConnected ? 'CHECK & REGISTER' : 'CONNECT WALLET'}
+
+        <div class="domain-status not-connected" id="domain-status" style="display: ${isConnected ? 'none' : 'block'};">
+          ${isConnected ? '' : 'Please connect your wallet to register a domain'}
+        </div>
+
+        <div class="domain-cost">
+          Registration cost: <strong>5 SOMI</strong>
+        </div>
+
+        <button 
+          class="primary-btn domain-register-btn" 
+          id="domain-register-btn"
+          data-action="domain-register"
+          ${isConnected ? '' : 'disabled'}
+        >
+          ${isConnected ? 'REGISTER DOMAIN' : 'CONNECT WALLET'}
+        </button>
+      </div>
+
+      <!-- Management Tab -->
+      <div class="domain-tab-content" data-content="management">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+          <h3 style="margin: 0; color: #fff; font-family: 'Courier New', monospace;">Domain Management</h3>
+          <button class="domain-refresh-btn" id="domain-refresh-btn" data-action="domain-refresh">
+            ↻ Refresh
           </button>
-          <div class="domain-note">Integration placeholder — connects to Somnia Domain Service.</div>
+        </div>
+
+        <div id="domain-primary-section" style="display: none; background: rgba(0,0,0,0.4); padding: 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(var(--theme-rgb), 0.4);">
+          <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px;">
+            <div style="display: flex; align-items: center; gap: 8px;">
+              <span style="color: var(--theme-color, #aa00ff); font-size: 1.2em;">★</span>
+              <span style="color: rgba(255,255,255,0.8); font-family: 'Courier New', monospace; font-size: 0.95em;">Primary Domain: </span>
+              <span id="domain-primary-name" style="color: var(--theme-color, #aa00ff); font-weight: bold; font-family: 'Courier New', monospace; font-size: 1.05em;"></span>
+            </div>
+            <button class="domain-action-btn secondary" id="domain-clear-primary-btn" data-action="domain-clear-primary" style="padding: 8px 16px; font-size: 0.85em; white-space: nowrap;">
+              Clear Primary
+            </button>
+          </div>
+        </div>
+
+        <div id="domain-list" class="domain-list">
+          <div class="domain-empty">
+            ${isConnected ? 'Loading domains...' : 'Please connect your wallet to view your domains'}
+          </div>
         </div>
       </div>
     </div>

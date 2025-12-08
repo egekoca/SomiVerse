@@ -147,6 +147,21 @@ export class Game {
       this.handleWalletConnected(e.detail);
     });
 
+    // Listen for primary domain changes
+    window.addEventListener('primaryDomainSet', async (e) => {
+      const { domain } = e.detail;
+      console.log('Primary domain set:', domain);
+      
+      // Update stored somName
+      this.currentSomName = domain;
+      
+      // Update player label if profile exists
+      const profile = ProfileService.getCurrentProfile();
+      if (profile && this.player) {
+        this.updatePlayerLabel(profile, domain);
+      }
+    });
+
     window.addEventListener('walletDisconnected', () => {
       this.resetPlayerState();
     });

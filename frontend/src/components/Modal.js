@@ -5,6 +5,7 @@
 import { FaucetService } from '../services/FaucetService.js';
 import { SwapService } from '../services/SwapService.js';
 import { GearboxService } from '../services/GearboxService.js';
+import { domainService } from '../services/DomainService.js';
 
 export class Modal {
   constructor() {
@@ -107,6 +108,8 @@ export class Modal {
           this.refreshFaucetContent();
         } else if (this.currentType === 'SWAP') {
           this.refreshSwapContent();
+        } else if (this.currentType === 'DOMAIN') {
+          this.refreshDomainContent();
         }
       }
     });
@@ -157,8 +160,14 @@ export class Modal {
     if (type === 'LEND') {
       this.initLendingUI();
     }
-    // Hide footer for lending/swap/faucet modals
-    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM') {
+
+    // Initialize domain UI if needed
+    if (type === 'DOMAIN') {
+      setTimeout(async () => await this.initDomainUI(), 100);
+    }
+
+    // Hide footer for lending/swap/faucet/domain modals
+    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM' || type === 'DOMAIN') {
       if (this.footerEl) this.footerEl.style.display = 'none';
     } else if (this.footerEl) {
       this.footerEl.style.display = '';
@@ -208,8 +217,23 @@ export class Modal {
       case 'withdraw':
         await this.handleLendingWithdraw(button);
         break;
+      case 'domain-register':
+        await this.handleDomainRegister(button);
+        break;
+      case 'domain-refresh':
+        await this.handleDomainRefresh(button);
+        break;
+      case 'domain-set-primary':
+        await this.handleDomainSetPrimary(button);
+        break;
+      case 'domain-clear-primary':
+        await this.handleDomainClearPrimary(button);
+        break;
+      case 'domain-renew':
+        await this.handleDomainRenew(button);
+        break;
       case 'domain-connect':
-        // Trigger wallet connect (integration placeholder for Somnia Domain Service)
+        // Trigger wallet connect
         window.dispatchEvent(new CustomEvent('requestWalletConnect'));
         break;
       case 'lend':
@@ -1359,6 +1383,435 @@ export class Modal {
       }
       if (btnLoader) btnLoader.classList.add('hidden');
       button.disabled = false;
+    }
+  }
+
+  // --- DOMAIN HANDLERS ---
+
+  /**
+   * Initialize Domain UI event listeners
+   */
+  async initDomainUI() {
+    await domainService.init();
+
+    // Tab switching
+    const tabs = this.bodyEl.querySelectorAll('.domain-tab');
+    tabs.forEach(tab => {
+      tab.addEventListener('click', () => {
+        const tabName = tab.dataset.tab;
+        
+        // Update active tab
+        tabs.forEach(t => {
+          t.classList.remove('active');
+          this.bodyEl.querySelector(`[data-content="${t.dataset.tab}"]`)?.classList.remove('active');
+        });
+        tab.classList.add('active');
+        this.bodyEl.querySelector(`[data-content="${tabName}"]`)?.classList.add('active');
+
+        // Load domains if switching to management tab
+        if (tabName === 'management' && this.walletAddress) {
+          this.loadDomains();
+        }
+      });
+    });
+
+    // Domain name input - check availability
+    const domainInput = this.bodyEl.querySelector('#domain-name-input');
+    if (domainInput) {
+      domainInput.addEventListener('input', () => {
+        this.checkDomainAvailability();
+      });
+    }
+
+    // Load domains if on management tab
+    if (this.walletAddress) {
+      const activeTab = this.bodyEl.querySelector('.domain-tab.active');
+      if (activeTab?.dataset.tab === 'management') {
+        this.loadDomains();
+      }
+    }
+  }
+
+  /**
+   * Check domain availability
+   */
+  async checkDomainAvailability() {
+    const domainInput = this.bodyEl.querySelector('#domain-name-input');
+    const statusEl = this.bodyEl.querySelector('#domain-status');
+    const registerBtn = this.bodyEl.querySelector('#domain-register-btn');
+
+    if (!domainInput || !statusEl || !registerBtn) return;
+
+    const domainName = domainInput.value.trim();
+    
+    // Clean domain name (remove special characters)
+    const cleanName = domainName.replace(/[^a-zA-Z0-9-]/g, '');
+    if (cleanName !== domainName) {
+      domainInput.value = cleanName;
+    }
+
+    if (!cleanName) {
+      statusEl.style.display = 'none';
+      registerBtn.disabled = !this.walletAddress;
+      return;
+    }
+
+    if (!this.walletAddress) {
+      statusEl.className = 'domain-status not-connected';
+      statusEl.textContent = 'Please connect your wallet to check availability';
+      statusEl.style.display = 'block';
+      registerBtn.disabled = true;
+      return;
+    }
+
+    statusEl.className = 'domain-status checking';
+    statusEl.textContent = 'Checking availability...';
+    statusEl.style.display = 'block';
+    registerBtn.disabled = true;
+
+    try {
+      const available = await domainService.isAvailable(cleanName);
+      
+      if (available) {
+        statusEl.className = 'domain-status available';
+        statusEl.textContent = `${cleanName}.somi is available!`;
+        registerBtn.disabled = false;
+      } else {
+        statusEl.className = 'domain-status unavailable';
+        statusEl.textContent = `${cleanName}.somi is not available`;
+        registerBtn.disabled = true;
+      }
+    } catch (error) {
+      console.error('Domain availability check error:', error);
+      statusEl.className = 'domain-status unavailable';
+      statusEl.textContent = 'Error checking availability';
+      registerBtn.disabled = true;
+    }
+  }
+
+  /**
+   * Handle domain registration
+   */
+  async handleDomainRegister(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      this.showMessage('Please connect your wallet first.', 'warning');
+      return;
+    }
+
+    const domainInput = this.bodyEl.querySelector('#domain-name-input');
+    const domainName = domainInput?.value.trim();
+
+    if (!domainName) {
+      this.showMessage('Please enter a domain name', 'error');
+      return;
+    }
+
+    // Clean domain name
+    const cleanName = domainName.replace(/[^a-zA-Z0-9-]/g, '').replace(/\.somi$/i, '');
+    
+    if (!cleanName) {
+      this.showMessage('Invalid domain name', 'error');
+      return;
+    }
+
+    const btnText = button.querySelector('.btn-text');
+    const btnLoader = button.querySelector('.btn-loader');
+    const originalText = btnText ? btnText.textContent : '';
+
+    if (btnText) btnText.classList.add('hidden');
+    if (btnLoader) btnLoader.classList.remove('hidden');
+    button.disabled = true;
+
+    try {
+      const result = await domainService.register(cleanName);
+
+      if (result.success) {
+        this.showXPPopup('DOMAIN REGISTERED', 100);
+        this.showMessage(`Domain ${cleanName}.somi registered successfully!`, 'success');
+        
+        // Clear input
+        if (domainInput) domainInput.value = '';
+        
+        // Ensure domain is saved to storage
+        if (result.domain) {
+          console.log('Domain from result:', result.domain);
+          domainService.addDomainToStorage(this.walletAddress, result.domain);
+        } else {
+          console.log('No domain in result, using cleanName:', cleanName);
+          domainService.addDomainToStorage(this.walletAddress, cleanName);
+        }
+        
+        // Switch to management tab and reload domains
+        setTimeout(() => {
+          const managementTab = this.bodyEl.querySelector('.domain-tab[data-tab="management"]');
+          const registerTab = this.bodyEl.querySelector('.domain-tab[data-tab="register"]');
+          if (managementTab && registerTab) {
+            registerTab.classList.remove('active');
+            managementTab.classList.add('active');
+            this.loadDomains();
+          }
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Domain registration error:', error);
+      this.showMessage(error.message || 'Failed to register domain', 'error');
+    } finally {
+      if (btnText) {
+        btnText.classList.remove('hidden');
+        btnText.textContent = originalText;
+      }
+      if (btnLoader) btnLoader.classList.add('hidden');
+      button.disabled = false;
+    }
+  }
+
+  /**
+   * Load user domains
+   */
+  async loadDomains() {
+    if (!this.walletAddress) {
+      const domainList = this.bodyEl.querySelector('#domain-list');
+      if (domainList) {
+        domainList.innerHTML = '<div class="domain-empty">Please connect your wallet to view your domains</div>';
+      }
+      return;
+    }
+
+    const domainList = this.bodyEl.querySelector('#domain-list');
+    const primarySection = this.bodyEl.querySelector('#domain-primary-section');
+    const primaryName = this.bodyEl.querySelector('#domain-primary-name');
+
+    if (!domainList) return;
+
+    domainList.innerHTML = '<div class="domain-empty">Loading domains...</div>';
+
+    try {
+      // Get primary domain
+      const primary = await domainService.getPrimaryDomain(this.walletAddress);
+      
+      if (primary) {
+        if (primarySection) primarySection.style.display = 'block';
+        if (primaryName) primaryName.textContent = `${primary}.somi`;
+      } else {
+        if (primarySection) primarySection.style.display = 'none';
+      }
+
+      // Get all domains
+      const domains = await domainService.getDomains(this.walletAddress);
+
+      if (domains.length === 0) {
+        domainList.innerHTML = '<div class="domain-empty">No domains registered yet. Register your first domain!</div>';
+        return;
+      }
+
+      // Load expiry for each domain
+      const domainData = await Promise.all(
+        domains.map(async (name) => {
+          const expiry = await domainService.getExpiry(name);
+          return { name, expiry, isPrimary: name === primary };
+        })
+      );
+
+      // Sort: primary first, then by name
+      domainData.sort((a, b) => {
+        if (a.isPrimary && !b.isPrimary) return -1;
+        if (!a.isPrimary && b.isPrimary) return 1;
+        return a.name.localeCompare(b.name);
+      });
+
+      // Render domains
+      domainList.innerHTML = domainData.map(domain => {
+        const expiryDate = domain.expiry && domain.expiry > 0 ? new Date(domain.expiry * 1000) : null;
+        const expiryStr = expiryDate 
+          ? `${expiryDate.getMonth() + 1}/${expiryDate.getDate()}/${expiryDate.getFullYear()}`
+          : 'Unknown';
+
+        return `
+          <div class="domain-item">
+            <div class="domain-item-header">
+              <div class="domain-name-wrapper">
+                <span class="domain-name ${domain.isPrimary ? 'primary' : ''}">${domain.name}.somi</span>
+                ${domain.isPrimary ? '<span class="domain-primary-badge">★ Primary</span>' : ''}
+              </div>
+            </div>
+            <div class="domain-expiry">
+              Expires: ${expiryStr}
+            </div>
+            <div class="domain-actions-row">
+              <button 
+                class="domain-action-btn set-primary" 
+                data-action="domain-set-primary" 
+                data-domain="${domain.name}"
+                ${domain.isPrimary ? 'disabled' : ''}
+              >
+                ${domain.isPrimary ? '★' : '☆'} Set Primary
+              </button>
+              <button 
+                class="domain-action-btn renew" 
+                data-action="domain-renew" 
+                data-domain="${domain.name}"
+              >
+                Renew
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+
+      // Re-attach event listeners
+      this.bodyEl.querySelectorAll('[data-action="domain-set-primary"]').forEach(btn => {
+        btn.addEventListener('click', () => this.handleDomainSetPrimary(btn));
+      });
+      this.bodyEl.querySelectorAll('[data-action="domain-renew"]').forEach(btn => {
+        btn.addEventListener('click', () => this.handleDomainRenew(btn));
+      });
+    } catch (error) {
+      console.error('Load domains error:', error);
+      domainList.innerHTML = '<div class="domain-empty">Error loading domains</div>';
+    }
+  }
+
+  /**
+   * Handle domain refresh
+   */
+  async handleDomainRefresh(button) {
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = '↻ Refreshing...';
+    
+    try {
+      // Force reload from storage first (fast)
+      const storedDomains = domainService.getDomainsFromStorage(this.walletAddress);
+      console.log('Stored domains on refresh:', storedDomains);
+      
+      // Then try to refresh from contract in background
+      await this.loadDomains();
+      this.showMessage('Domains refreshed', 'success');
+    } catch (error) {
+      console.error('Refresh error:', error);
+      this.showMessage('Failed to refresh domains', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  /**
+   * Handle set primary domain
+   */
+  async handleDomainSetPrimary(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      return;
+    }
+
+    const domainName = button.dataset.domain;
+    if (!domainName) return;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'Setting...';
+
+    try {
+      const result = await domainService.setPrimary(domainName);
+
+      if (result.success) {
+        this.showXPPopup('PRIMARY DOMAIN SET', 50);
+        this.showMessage(`Primary domain set to ${domainName}.somi`, 'success');
+        
+        // Dispatch event to update player label
+        window.dispatchEvent(new CustomEvent('primaryDomainSet', {
+          detail: { domain: `${domainName}.somi` }
+        }));
+        
+        // Reload domains
+        setTimeout(() => {
+          this.loadDomains();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Set primary error:', error);
+      this.showMessage(error.message || 'Failed to set primary domain', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  /**
+   * Handle clear primary domain
+   */
+  async handleDomainClearPrimary(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      return;
+    }
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'Clearing...';
+
+    try {
+      // Clear primary by setting empty string (if supported) or just reload
+      // For now, just reload - clearing might require contract method
+      await this.loadDomains();
+      this.showMessage('Primary domain cleared', 'success');
+    } catch (error) {
+      console.error('Clear primary error:', error);
+      this.showMessage('Failed to clear primary domain', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  /**
+   * Handle domain renewal
+   */
+  async handleDomainRenew(button) {
+    if (!this.walletAddress) {
+      window.dispatchEvent(new CustomEvent('requestWalletConnect'));
+      return;
+    }
+
+    const domainName = button.dataset.domain;
+    if (!domainName) return;
+
+    button.disabled = true;
+    const originalText = button.textContent;
+    button.textContent = 'Renewing...';
+
+    try {
+      const result = await domainService.renew(domainName);
+
+      if (result.success) {
+        this.showXPPopup('DOMAIN RENEWED', 75);
+        this.showMessage(`Domain ${domainName}.somi renewed successfully!`, 'success');
+        
+        // Reload domains
+        setTimeout(() => {
+          this.loadDomains();
+        }, 2000);
+      }
+    } catch (error) {
+      console.error('Domain renewal error:', error);
+      this.showMessage(error.message || 'Failed to renew domain', 'error');
+    } finally {
+      button.disabled = false;
+      button.textContent = originalText;
+    }
+  }
+
+  /**
+   * Refresh domain content
+   */
+  async refreshDomainContent() {
+    if (this.currentType === 'DOMAIN') {
+      const { generateDomainContent } = await import('./ModalContent.js');
+      const content = await generateDomainContent(this.walletAddress);
+      this.bodyEl.innerHTML = content;
+      await this.initDomainUI();
     }
   }
 

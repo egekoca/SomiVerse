@@ -4,6 +4,7 @@
  */
 import { ProfileService } from '../services/ProfileService.js';
 import { SomniaNameService } from '../services/SomniaNameService.js';
+import { DomainService } from '../services/DomainService.js';
 
 export class Header {
   constructor(profileModal = null) {
@@ -15,6 +16,7 @@ export class Header {
     this.dropdownOpen = false;
     this.xp = 0;
     this.level = 1;
+    this.domainService = new DomainService();
     
     this.create();
     this.setupListeners();
@@ -104,6 +106,21 @@ export class Header {
       this.updateXP(e.detail.totalXP, e.detail.level);
     });
 
+    // Primary domain set event
+    window.addEventListener('primaryDomainSet', async (e) => {
+      const { domain } = e.detail;
+      console.log('Primary domain set in header:', domain);
+      
+      // Update somName and wallet address display
+      if (this.isConnected && this.account) {
+        this.somName = domain;
+        const walletAddrEl = this.element.querySelector('.wallet-addr');
+        if (walletAddrEl) {
+          walletAddrEl.textContent = domain;
+        }
+      }
+    });
+
     // Check existing connection
     this.checkConnection();
 
@@ -179,13 +196,28 @@ export class Header {
 
     // Resolve Somnia domain name (.somi)
     try {
-      const somName = await SomniaNameService.getPrimarySomName(account);
-      if (somName) {
-        this.somName = somName;
-        this.element.querySelector('.wallet-addr').textContent = somName;
+      // Try DomainService first (new service)
+      const primaryDomain = await this.domainService.getPrimaryDomain(account);
+      if (primaryDomain) {
+        this.somName = `${primaryDomain}.somi`;
+        const walletAddrEl = this.element.querySelector('.wallet-addr');
+        if (walletAddrEl) {
+          walletAddrEl.textContent = this.somName;
+        }
+      } else {
+        // Fallback to SomniaNameService
+        const somName = await SomniaNameService.getPrimarySomName(account);
+        if (somName) {
+          this.somName = somName;
+          const walletAddrEl = this.element.querySelector('.wallet-addr');
+          if (walletAddrEl) {
+            walletAddrEl.textContent = somName;
+          }
+        }
       }
     } catch (err) {
       // Silent fail - fallback to shortened address
+      console.warn('Failed to resolve domain name:', err);
     }
 
     // Load profile
