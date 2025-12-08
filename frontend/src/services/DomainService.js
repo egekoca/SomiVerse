@@ -415,11 +415,30 @@ export class DomainService {
       // Get current block number
       const provider = await SwapService.getProvider();
       const currentBlock = await provider.getBlockNumber();
-      const fromBlock = Math.max(0, currentBlock - 1000); // Last 1000 blocks
-
-      // Query Registered events for this address
-      const filter = this.registryContract.filters.Registered(null, address);
-      const events = await this.registryContract.queryFilter(filter, fromBlock, currentBlock);
+      
+      // Query in smaller chunks to avoid "block range exceeds" error
+      // Try last 500 blocks first, then expand if needed
+      let fromBlock = Math.max(0, currentBlock - 500);
+      let events = [];
+      
+      try {
+        const filter = this.registryContract.filters.Registered(null, address);
+        events = await this.registryContract.queryFilter(filter, fromBlock, currentBlock);
+      } catch (error) {
+        // If 500 blocks fails, try even smaller chunks
+        if (error.message && error.message.includes('block range')) {
+          fromBlock = Math.max(0, currentBlock - 100);
+          try {
+            const filter = this.registryContract.filters.Registered(null, address);
+            events = await this.registryContract.queryFilter(filter, fromBlock, currentBlock);
+          } catch (smallError) {
+            // If even 100 blocks fails, return empty
+            return [];
+          }
+        } else {
+          throw error;
+        }
+      }
       
       const domains = events.map(e => {
         let name = e.args.name;
@@ -429,7 +448,6 @@ export class DomainService {
         }
         return name;
       }).filter(name => name && name.length > 0);
-      console.log('Found domains from events:', domains);
       
       // Save to storage for future use
       if (domains.length > 0) {
@@ -515,7 +533,10 @@ export class DomainService {
       });
 
       let data = await response.json();
-      console.log('API response (JSON-RPC):', data);
+      // Only log if there's actual data, not errors
+      if (data.result && !data.error) {
+        console.log('API response (JSON-RPC):', data);
+      }
 
       // If JSON-RPC doesn't work, try GraphQL
       if (data.error || !data.result) {
@@ -527,7 +548,10 @@ export class DomainService {
           body: JSON.stringify(graphqlBody)
         });
         data = await response.json();
-        console.log('API response (GraphQL):', data);
+        // Only log if there's actual data
+        if (data.data && !data.error) {
+          console.log('API response (GraphQL):', data);
+        }
       }
 
       // If GraphQL doesn't work, try REST
@@ -540,7 +564,10 @@ export class DomainService {
           body: JSON.stringify(restBody)
         });
         data = await response.json();
-        console.log('API response (REST):', data);
+        // Only log if there's actual data
+        if (data.domains && !data.error) {
+          console.log('API response (REST):', data);
+        }
       }
 
       // Parse response
@@ -611,7 +638,6 @@ export class DomainService {
           );
           
           const domains = await contractWithBrowser.getDomainsOf(address);
-          console.log('getDomainsOf result (browser provider):', domains);
           if (domains && domains.length > 0) {
             // Filter out empty strings and remove .somi extension
             const filtered = domains.filter(d => d && d.length > 0).map(d => {
@@ -625,14 +651,12 @@ export class DomainService {
             }
           }
         }
-      } catch (error) {
-        console.warn('getDomainsOf not available (browser provider):', error.message);
-        
-        // Try with RPC provider as last resort
-        try {
-          const domains = await this.registryContract.getDomainsOf(address);
-          console.log('getDomainsOf result (RPC provider):', domains);
-          if (domains && domains.length > 0) {
+        } catch (error) {
+          // Silently fail, try RPC provider
+          // Try with RPC provider as last resort
+          try {
+            const domains = await this.registryContract.getDomainsOf(address);
+            if (domains && domains.length > 0) {
             const filtered = domains.filter(d => d && d.length > 0).map(d => {
               return d.replace(/\.somi$/i, '');
             });
@@ -641,9 +665,9 @@ export class DomainService {
               return filtered;
             }
           }
-        } catch (rpcError) {
-          console.warn('getDomainsOf not available (RPC provider):', rpcError.message);
-        }
+          } catch (rpcError) {
+            // Silently fail, try events
+          }
       }
 
       // Try events as last resort
@@ -724,7 +748,10 @@ export class DomainService {
       });
 
       const data = await response.json();
-      console.log('Primary API response:', data);
+      // Only log if there's actual data, not errors
+      if (data.data && !data.error) {
+        console.log('Primary API response:', data);
+      }
 
       let primary = '';
       if (data.data && data.data.domains && data.data.domains.length > 0) {
@@ -780,7 +807,6 @@ export class DomainService {
           );
           
           const primary = await contractWithBrowser.getPrimary(address);
-          console.log('getPrimary result (browser provider):', primary);
           if (primary && primary.length > 0) {
             // Remove .somi if present
             const cleanPrimary = primary.replace(/\.somi$/i, '');
@@ -788,27 +814,24 @@ export class DomainService {
             return cleanPrimary;
           }
         }
-      } catch (error) {
-        console.warn('getPrimary not available (browser provider):', error.message);
-        
-        // Try with RPC provider as last resort
-        try {
-          const primary = await this.registryContract.getPrimary(address);
-          console.log('getPrimary result (RPC provider):', primary);
-          if (primary && primary.length > 0) {
+        } catch (error) {
+          // Silently fail, try RPC provider
+          // Try with RPC provider as last resort
+          try {
+            const primary = await this.registryContract.getPrimary(address);
+            if (primary && primary.length > 0) {
             const cleanPrimary = primary.replace(/\.somi$/i, '');
             localStorage.setItem(key, cleanPrimary);
             return cleanPrimary;
           }
-        } catch (rpcError) {
-          console.warn('getPrimary not available (RPC provider):', rpcError.message);
+          } catch (rpcError) {
+            // Silently fail, try mapping
+          }
         }
-      }
 
       // Try primaryName mapping
       try {
         const primary = await this.registryContract.primaryName(address);
-        console.log('primaryName result:', primary);
         if (primary && primary.length > 0 && primary !== '0x') {
           // Remove .somi if present
           const cleanPrimary = primary.replace(/\.somi$/i, '');
@@ -816,7 +839,7 @@ export class DomainService {
           return cleanPrimary;
         }
       } catch (error) {
-        console.warn('primaryName not available:', error.message);
+        // Silently fail
       }
 
       return '';
