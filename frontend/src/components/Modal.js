@@ -126,7 +126,11 @@ export class Modal {
   }
 
   open(title, content, color = null, type = null) {
-    this.titleEl.textContent = title;
+    if (type === 'CLAIM') {
+      this.titleEl.innerHTML = `<img src="/somniablack.png" class="modal-title-icon" alt="logo" /> STT Faucet`;
+    } else {
+      this.titleEl.textContent = title;
+    }
     this.bodyEl.innerHTML = content;
     this.currentType = type;
     
@@ -152,20 +156,23 @@ export class Modal {
     // Initialize lending UI if needed
     if (type === 'LEND') {
       this.initLendingUI();
-      // Hide footer for lending modal
-      if (this.footerEl) {
-        this.footerEl.style.display = 'none';
-      }
-    } else if (type === 'SWAP') {
-      // Hide footer for swap modal
-      if (this.footerEl) {
-        this.footerEl.style.display = 'none';
-      }
+    }
+    // Hide footer for lending/swap/faucet modals
+    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM') {
+      if (this.footerEl) this.footerEl.style.display = 'none';
+    } else if (this.footerEl) {
+      this.footerEl.style.display = '';
+    }
+
+    // Hide subtitle/system status for faucet modal
+    const subtitleEl = this.modal.querySelector('.modal-subtitle');
+    const systemStatusEl = this.modal.querySelector('.system-status');
+    if (type === 'CLAIM') {
+      if (subtitleEl) subtitleEl.style.display = 'none';
+      if (systemStatusEl) systemStatusEl.style.display = 'none';
     } else {
-      // Show footer for other modals
-      if (this.footerEl) {
-        this.footerEl.style.display = '';
-      }
+      if (subtitleEl) subtitleEl.style.display = '';
+      if (systemStatusEl) systemStatusEl.style.display = '';
     }
 
     // Auto-focus on first interactive element

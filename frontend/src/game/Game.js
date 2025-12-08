@@ -319,7 +319,7 @@ export class Game {
       x: -dist,
       z: dist,
       color: CONFIG.colors.gold,
-      title: 'GOLD FAUCET',
+      title: 'STT FAUCET',
       subtitle: 'DAILY REWARDS',
       type: 'CLAIM',
       builderFn: buildGoldFaucet,

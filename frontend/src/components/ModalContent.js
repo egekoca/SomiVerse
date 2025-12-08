@@ -635,10 +635,6 @@ export function generateFaucetContent(walletAddress = null) {
 
   return `
     <div class="faucet-container">
-      <div class="faucet-status ${statusClass}">
-        ${canClaim ? 'READY TO CLAIM' : (walletAddress ? 'ON COOLDOWN' : 'WALLET NOT CONNECTED')}
-      </div>
-      
       ${countdownDisplay}
       
       <div class="defi-row">
