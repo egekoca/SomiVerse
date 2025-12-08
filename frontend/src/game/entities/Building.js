@@ -44,20 +44,70 @@ export class Building {
   }
 
   addBaseElements() {
-    // Zemin halkası
-    const ring = new THREE.Mesh(
-      new THREE.RingGeometry(18, 20, 32),
-      new THREE.MeshBasicMaterial({
+    // For DOMAIN type: square outline instead of ring
+    if (this.type === 'DOMAIN') {
+      // Square outline at base - wider and thicker
+      const squareSize = 30; // Wider than building (25) for better visibility
+      const lineThickness = 0.4; // Thick lines
+      const lineHeight = 0.2; // Height of the line
+      const squareMaterial = new THREE.MeshBasicMaterial({
         color: this.color,
         transparent: true,
-        opacity: 0.5,
-        side: THREE.DoubleSide
-      })
-    );
-    ring.rotation.x = -Math.PI / 2;
-    ring.position.y = 0.5;
-    ring.frustumCulled = false;
-    this.mesh.add(ring);
+        opacity: 0.7
+      });
+      
+      // Create 4 thick lines for square outline
+      // Top edge
+      const topEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(squareSize, lineHeight, lineThickness),
+        squareMaterial
+      );
+      topEdge.position.set(0, 0.5, squareSize / 2);
+      topEdge.frustumCulled = false;
+      this.mesh.add(topEdge);
+      
+      // Bottom edge
+      const bottomEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(squareSize, lineHeight, lineThickness),
+        squareMaterial
+      );
+      bottomEdge.position.set(0, 0.5, -squareSize / 2);
+      bottomEdge.frustumCulled = false;
+      this.mesh.add(bottomEdge);
+      
+      // Left edge
+      const leftEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(lineThickness, lineHeight, squareSize),
+        squareMaterial
+      );
+      leftEdge.position.set(-squareSize / 2, 0.5, 0);
+      leftEdge.frustumCulled = false;
+      this.mesh.add(leftEdge);
+      
+      // Right edge
+      const rightEdge = new THREE.Mesh(
+        new THREE.BoxGeometry(lineThickness, lineHeight, squareSize),
+        squareMaterial
+      );
+      rightEdge.position.set(squareSize / 2, 0.5, 0);
+      rightEdge.frustumCulled = false;
+      this.mesh.add(rightEdge);
+    } else {
+      // Zemin halkası (for other buildings)
+      const ring = new THREE.Mesh(
+        new THREE.RingGeometry(18, 20, 32),
+        new THREE.MeshBasicMaterial({
+          color: this.color,
+          transparent: true,
+          opacity: 0.5,
+          side: THREE.DoubleSide
+        })
+      );
+      ring.rotation.x = -Math.PI / 2;
+      ring.position.y = 0.5;
+      ring.frustumCulled = false;
+      this.mesh.add(ring);
+    }
 
     // Point light
     const light = new THREE.PointLight(this.color, 1.5, 50);
