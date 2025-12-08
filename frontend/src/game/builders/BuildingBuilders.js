@@ -403,6 +403,10 @@ export function buildDomainHub(group) {
   // Store texture and canvas for animation
   group.userData.billboardTexture = tex;
   group.userData.billboardCanvas = billboardCanvas; // Store canvas directly
+  
+  // Neon text above building (like other buildings)
+  const neonText = createNeonText('DOMAIN', 0xaa00ff, 55);
+  group.add(neonText);
 }
 
 // ==================== MINT LAB ====================

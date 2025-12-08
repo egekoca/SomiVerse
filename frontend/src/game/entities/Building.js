@@ -114,7 +114,7 @@ export class Building {
     light.position.y = 20;
     this.mesh.add(light);
 
-    // Tabela - Skip for DOMAIN type (no sign needed)
+    // Tabela - Skip for DOMAIN type (uses createNeonText in builder instead)
     if (this.type !== 'DOMAIN') {
       this.createSign();
     }
@@ -139,7 +139,15 @@ export class Building {
         side: THREE.DoubleSide
       })
     );
-    sign.position.y = 10;
+    
+    // Position sign above building - DOMAIN building is 45 units tall, others vary
+    // For DOMAIN: height is 45, so position at 45/2 + some offset = ~25 + offset
+    // For consistency with other buildings, use a fixed height above ground
+    if (this.type === 'DOMAIN') {
+      sign.position.y = 50; // Above the 45-unit tall building
+    } else {
+      sign.position.y = 10; // Default for other buildings
+    }
     sign.position.z = 15;
     sign.frustumCulled = false;
     this.mesh.add(sign);
