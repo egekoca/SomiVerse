@@ -789,9 +789,6 @@ export function buildBridge(group) {
   );
 
   // Neon text above bridge
-  const neonText = createNeonText('BRIDGE', neonRed, pylonHeight + 8);
-  neonText.rotation.y = group.rotation.y; // match bridge angle
-  group.add(neonText);
 }
 
 export default {
