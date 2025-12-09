@@ -85,6 +85,12 @@ export class Modal {
         this.handleSwapPercent(e.target.textContent);
       }
 
+      // Bridge Percent buttons
+      if (e.target.classList.contains('bridge-percent-btn')) {
+        this.handleBridgePercent(e.target);
+        return;
+      }
+
       // Swap Switch button - handled in initSwapUI for SWAP type modals
     });
 
@@ -2220,6 +2226,52 @@ export class Modal {
     } finally {
       button.disabled = false;
       button.textContent = originalText;
+    }
+  }
+
+  /**
+   * Handle bridge percent button click
+   */
+  async handleBridgePercent(button) {
+    if (this.currentType !== 'BRIDGE' || !this.walletAddress) return;
+
+    try {
+      const percent = parseInt(button.dataset.percent || '100');
+      
+      // Get current balance from the balance display
+      const sellBalanceEl = this.bodyEl.querySelector('.bridge-card:first-child .bridge-balance');
+      if (!sellBalanceEl) return;
+
+      // Extract balance from text like "Balance: 0.0012 ETH"
+      const balanceText = sellBalanceEl.textContent;
+      const balanceMatch = balanceText.match(/Balance:\s*([\d.]+)/);
+      if (!balanceMatch) return;
+
+      const currentBalance = parseFloat(balanceMatch[1]);
+      if (isNaN(currentBalance) || currentBalance <= 0) return;
+
+      // Calculate amount based on percent
+      const amount = (currentBalance * percent) / 100;
+      
+      // Update amount value display
+      const amountValue = this.bodyEl.querySelector('.bridge-card:first-child .bridge-amount-value');
+      if (amountValue) {
+        // Format based on token decimals (ETH/USDC typically 4-6 decimals for display)
+        const formattedAmount = amount < 0.0001 
+          ? amount.toFixed(8) 
+          : amount < 1 
+          ? amount.toFixed(6) 
+          : amount.toFixed(4);
+        amountValue.textContent = formattedAmount;
+      }
+
+      // Update button text if needed (optional visual feedback)
+      button.style.background = 'rgba(var(--theme-rgb, 255,0,85), 0.3)';
+      setTimeout(() => {
+        button.style.background = '';
+      }, 200);
+    } catch (error) {
+      console.error('Handle bridge percent error:', error);
     }
   }
 

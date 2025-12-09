@@ -1134,7 +1134,8 @@ export async function generateBridgeContent(walletAddress = null) {
         display: flex;
         gap: 6px;
       }
-      .bridge-percent button {
+      .bridge-percent button,
+      .bridge-percent-btn {
         background: rgba(255,255,255,0.08);
         border: 1px solid rgba(255,255,255,0.15);
         color: #fff;
@@ -1143,6 +1144,13 @@ export async function generateBridgeContent(walletAddress = null) {
         cursor: pointer;
         font-family: 'Courier New', monospace;
         font-size: 0.8em;
+        transition: all 0.2s;
+      }
+      .bridge-percent button:hover,
+      .bridge-percent-btn:hover {
+        background: rgba(var(--theme-rgb, 255,0,85), 0.2);
+        border-color: rgba(var(--theme-rgb, 255,0,85), 0.5);
+        color: var(--theme-color, #ff0055);
       }
       .bridge-divider {
         display: flex;
@@ -1203,9 +1211,10 @@ export async function generateBridgeContent(walletAddress = null) {
             <div class="bridge-balance">Balance: ${parseFloat(sellBalance || '0').toFixed(4)} ${sellToken}</div>
           </div>
           <div class="bridge-percent">
-            <button>20%</button>
-            <button>50%</button>
-            <button>MAX</button>
+            <button class="bridge-percent-btn" data-percent="25">25%</button>
+            <button class="bridge-percent-btn" data-percent="50">50%</button>
+            <button class="bridge-percent-btn" data-percent="75">75%</button>
+            <button class="bridge-percent-btn" data-percent="100">MAX</button>
           </div>
         </div>
       </div>
