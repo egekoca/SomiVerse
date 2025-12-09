@@ -1011,10 +1011,224 @@ export async function generateDomainContent(walletAddress = null) {
   `;
 }
 
+/**
+ * Generate Bridge content (simple UI for bridging to Somnia Mainnet SOMI)
+ */
+export function generateBridgeContent(walletAddress = null) {
+  const isConnected = !!walletAddress;
+  const buttonText = isConnected ? 'Enter an amount' : 'Connect Wallet';
+  const buttonDisabled = isConnected ? 'disabled' : '';
+
+  return `
+    <style>
+      .bridge-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .bridge-card {
+        background: rgba(0, 0, 0, 0.3);
+        border: 1px solid rgba(var(--theme-rgb, 255,0,85), 0.25);
+        border-radius: 10px;
+        padding: 14px;
+      }
+      .bridge-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 10px;
+        margin-bottom: 8px;
+        font-family: 'Courier New', monospace;
+        color: rgba(255,255,255,0.8);
+      }
+      .bridge-row:last-child { margin-bottom: 0; }
+      .bridge-amount {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+      }
+      .bridge-amount-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 8px;
+      }
+      .bridge-amount-value {
+        font-size: 2.2em;
+        font-weight: 700;
+        color: #fff;
+      }
+      .bridge-balance {
+        font-size: 0.9em;
+        color: rgba(255,255,255,0.6);
+      }
+      .bridge-token-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        border-radius: 16px;
+        padding: 8px 12px;
+        font-family: 'Courier New', monospace;
+        color: #fff;
+        cursor: pointer;
+        position: relative;
+      }
+      .bridge-token-btn span {
+        font-weight: 700;
+      }
+      .bridge-token-icon {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--token-icon, url('/somniablack.png')) center/cover no-repeat;
+      }
+      .bridge-token-icon .badge {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--chain-icon, url('/somniablack.png')) center/cover no-repeat;
+        bottom: -2px;
+        right: -2px;
+        border: 2px solid #0d0a14;
+      }
+      .bridge-token-icon {
+        position: relative;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: var(--token-icon, url('/somniablack.png')) center/cover no-repeat;
+      }
+      .bridge-token-icon .badge {
+        position: absolute;
+        width: 18px;
+        height: 18px;
+        border-radius: 50%;
+        background: var(--chain-icon, url('/somniablack.png')) center/cover no-repeat;
+        bottom: -2px;
+        right: -2px;
+        border: 2px solid #0d0a14;
+      }
+      .bridge-percent {
+        display: flex;
+        gap: 6px;
+      }
+      .bridge-percent button {
+        background: rgba(255,255,255,0.08);
+        border: 1px solid rgba(255,255,255,0.15);
+        color: #fff;
+        padding: 4px 10px;
+        border-radius: 12px;
+        cursor: pointer;
+        font-family: 'Courier New', monospace;
+        font-size: 0.8em;
+      }
+      .bridge-divider {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        margin: 4px 0;
+      }
+      .bridge-arrow {
+        width: 36px;
+        height: 36px;
+        border-radius: 10px;
+        border: 1px solid rgba(255,255,255,0.2);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: #fff;
+        font-size: 1.2em;
+      }
+      .bridge-footer {
+        font-size: 0.85em;
+        color: rgba(255,255,255,0.6);
+        font-family: 'Courier New', monospace;
+        text-align: center;
+        margin-top: 6px;
+      }
+      .bridge-btn {
+        width: 100%;
+        padding: 14px;
+        margin-top: 4px;
+        font-size: 1em;
+      }
+      /* Small panel disabled; using full-screen selector below */
+      .bridge-label {
+        font-size: 0.9em;
+        color: rgba(255,255,255,0.7);
+      }
+      .bridge-chain {
+        font-size: 0.85em;
+        color: rgba(255,255,255,0.6);
+      }
+    </style>
+
+    <div class="bridge-container">
+      <div class="bridge-card">
+        <div class="bridge-row">
+          <span class="bridge-label">Sell</span>
+          <div class="bridge-token-btn" data-token-role="sell" id="bridge-sell-btn" style="--token-icon:url('https://assets.coingecko.com/coins/images/279/large/ethereum.png'); --chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png');">
+            <div class="bridge-token-icon"><div class="badge"></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span data-token-symbol>ETH</span>
+              <small class="bridge-chain" data-token-chain>Base</small>
+            </div>
+          </div>
+        </div>
+        <div class="bridge-amount">
+          <div class="bridge-amount-top">
+            <div class="bridge-amount-value">0</div>
+            <div class="bridge-balance">Balance: 0.00</div>
+          </div>
+          <div class="bridge-percent">
+            <button>20%</button>
+            <button>50%</button>
+            <button>MAX</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="bridge-divider">
+        <div class="bridge-arrow">↓</div>
+      </div>
+
+      <div class="bridge-card">
+        <div class="bridge-row">
+          <span class="bridge-label">Buy</span>
+          <div class="bridge-token-btn" style="cursor: default; gap: 10px; --token-icon:url('/somniablack.png'); --chain-icon:url('/somniablack.png');">
+            <div class="bridge-token-icon"><div class="badge"></div></div>
+            <div style="display:flex;flex-direction:column;gap:2px;">
+              <span>SOMI</span>
+              <small class="bridge-chain">Somnia</small>
+            </div>
+          </div>
+        </div>
+        <div class="bridge-amount">
+          <div class="bridge-amount-top">
+            <div class="bridge-amount-value">0</div>
+            <div class="bridge-balance">Balance: 0.00</div>
+          </div>
+        </div>
+      </div>
+
+      <button class="primary-btn bridge-btn" ${buttonDisabled}>
+        <span class="btn-text">${buttonText}</span>
+      </button>
+      <div class="bridge-footer">Bridge assets to Somnia Mainnet (SOMI)</div>
+    </div>
+
+  `;
+}
+
 export default {
   generateSwapContent,
   generateLendingContent,
   generateMintContent,
   generateFaucetContent,
-  generateDomainContent
+  generateDomainContent,
+  generateBridgeContent
 };

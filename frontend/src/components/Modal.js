@@ -166,8 +166,8 @@ export class Modal {
       setTimeout(async () => await this.initDomainUI(), 100);
     }
 
-    // Hide footer for lending/swap/faucet modals, but show custom footer for domain
-    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM') {
+    // Hide footer for lending/swap/faucet/bridge modals, but show custom footer for domain
+    if (type === 'LEND' || type === 'SWAP' || type === 'CLAIM' || type === 'BRIDGE') {
       if (this.footerEl) this.footerEl.style.display = 'none';
     } else if (type === 'DOMAIN') {
       // Show footer for domain modal with custom content
@@ -196,15 +196,20 @@ export class Modal {
       `;
     }
 
-    // Hide subtitle/system status for faucet and domain modals
+    // Hide subtitle/system status for faucet, domain, and bridge modals
     const subtitleEl = this.modal.querySelector('.modal-subtitle');
     const systemStatusEl = this.modal.querySelector('.system-status');
-    if (type === 'CLAIM' || type === 'DOMAIN') {
+    if (type === 'CLAIM' || type === 'DOMAIN' || type === 'BRIDGE') {
       if (subtitleEl) subtitleEl.style.display = 'none';
       if (systemStatusEl) systemStatusEl.style.display = 'none';
     } else {
       if (subtitleEl) subtitleEl.style.display = '';
       if (systemStatusEl) systemStatusEl.style.display = '';
+    }
+
+    // Bridge UI init
+    if (type === 'BRIDGE') {
+      setTimeout(() => this.initBridgeUI(), 50);
     }
 
     // Auto-focus on first interactive element
@@ -214,6 +219,316 @@ export class Modal {
         focusable.focus();
       }
     }, 50);
+  }
+
+  /**
+   * Init bridge UI (token selector panel)
+   */
+  initBridgeUI() {
+    const sellBtn = this.bodyEl.querySelector('.bridge-token-btn[data-token-role="sell"]');
+    let overlay = document.getElementById('bridge-selector-overlay');
+    let closeBtn = document.getElementById('bridge-selector-close');
+
+    // Create overlay in body if missing
+    if (!overlay) {
+      const tpl = `
+        <style id="bridge-selector-style">
+          .bridge-selector-overlay {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+          }
+          .bridge-selector-overlay.active { display: flex; }
+        .bridge-selector {
+          width: 90%;
+          max-width: 960px;
+          max-height: 80vh;
+          background: #050508;
+          border: 1px solid rgba(255,255,255,0.08);
+          border-radius: 18px;
+          box-shadow: 0 20px 60px rgba(0,0,0,0.75);
+          display: grid;
+          grid-template-columns: 240px 1fr;
+          position: relative;
+          overflow: hidden;
+          color: #f6f1ff;
+          font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+        }
+        .bridge-close-btn {
+          position: absolute;
+          top: 12px;
+          right: 12px;
+          background: rgba(255,255,255,0.08);
+          border: 1px solid rgba(255,255,255,0.2);
+          color: #fff;
+          width: 32px;
+          height: 32px;
+          border-radius: 10px;
+          cursor: pointer;
+        }
+        .bridge-selector .panel-left {
+          background: #0c0a12;
+          border-right: 1px solid rgba(255,255,255,0.08);
+          padding: 16px;
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .bridge-selector .panel-right {
+          padding: 16px;
+          overflow-y: auto;
+          background: #0a0810;
+        }
+        .bridge-select-title {
+          font-size: 15px;
+          font-weight: 700;
+          letter-spacing: 0.2px;
+          color: #f6f1ff;
+          margin-bottom: 6px;
+        }
+        .bridge-network-item {
+          padding: 10px 12px;
+          border-radius: 12px;
+          background: rgba(255,255,255,0.04);
+          border: 1px solid rgba(255,255,255,0.06);
+          cursor: pointer;
+          font-weight: 700;
+          color: #f6f1ff;
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          transition: all 0.15s ease;
+        }
+        .bridge-network-icon {
+          width: 22px;
+          height: 22px;
+          border-radius: 11px;
+          background: var(--chain-icon, url('/somniablack.png')) center/cover no-repeat;
+          box-shadow: 0 0 8px rgba(0,0,0,0.35);
+        }
+        .bridge-network-item.active,
+        .bridge-network-item:hover {
+          border-color: rgba(255,255,255,0.25);
+          background: rgba(255,255,255,0.12);
+        }
+        .bridge-token-list {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+        }
+        .bridge-token-item {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          padding: 12px;
+          border-radius: 14px;
+          background: #1e1e1e;
+          border: 1px solid rgba(255,255,255,0.06);
+          cursor: pointer;
+        }
+        .bridge-token-item:hover {
+          border-color: rgba(255,255,255,0.25);
+          background: #252525;
+          box-shadow: 0 6px 16px rgba(0,0,0,0.35);
+        }
+        .bridge-token-info {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+        .bridge-token-logo {
+          width: 36px;
+          height: 36px;
+          border-radius: 18px;
+          background: var(--token-icon, url('/somniablack.png')) center/cover no-repeat;
+          position: relative;
+          box-shadow: 0 0 12px rgba(255,255,255,0.12);
+        }
+        .bridge-token-logo .chain {
+          position: absolute;
+          width: 14px;
+          height: 14px;
+          border-radius: 7px;
+          bottom: -3px;
+          right: -3px;
+          background: var(--chain-icon, url('/somniablack.png')) center/cover no-repeat;
+          border: 2px solid #1e1e1e;
+          box-shadow: 0 0 6px rgba(0,0,0,0.35);
+        }
+        .bridge-token-name { font-weight: 700; color: #f6f1ff; }
+        .bridge-token-chain { font-size: 13px; color: rgba(255,255,255,0.7); }
+        .bridge-badge { font-size: 12px; color: rgba(255,255,255,0.65); }
+        </style>
+        <div class="bridge-selector-overlay" id="bridge-selector-overlay">
+          <div class="bridge-selector">
+            <button class="bridge-close-btn" id="bridge-selector-close">×</button>
+            <div class="panel-left">
+              <div class="bridge-select-title">Networks</div>
+              <div class="bridge-network-item active" data-network="all" data-chain-icon="/somniablack.png">
+                <div class="bridge-network-icon" style="--chain-icon:url('/somniablack.png');"></div>
+                <span>All Networks</span>
+              </div>
+              <div class="bridge-network-item" data-network="base" data-chain-icon="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png">
+                <div class="bridge-network-icon" style="--chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png');"></div>
+                <span>Base</span>
+              </div>
+              <div class="bridge-network-item" data-network="ethereum" data-chain-icon="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png">
+                <div class="bridge-network-icon" style="--chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png');"></div>
+                <span>Ethereum</span>
+              </div>
+            </div>
+            <div class="panel-right">
+              <div class="bridge-select-title">Tokens</div>
+              <div class="bridge-token-list">
+              <div class="bridge-token-item"
+                data-token="ETH"
+                data-network="base"
+                data-token-icon="https://assets.coingecko.com/coins/images/279/large/ethereum.png"
+                data-chain-icon="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png">
+                <div class="bridge-token-info">
+                  <div class="bridge-token-logo" style="--token-icon:url('https://assets.coingecko.com/coins/images/279/large/ethereum.png');">
+                    <div class="chain" style="--chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png');"></div>
+                  </div>
+                  <div>
+                    <div class="bridge-token-name">ETH</div>
+                    <div class="bridge-token-chain">Base</div>
+                  </div>
+                </div>
+                <div class="bridge-badge">0x...0030</div>
+              </div>
+              <div class="bridge-token-item"
+                data-token="USDC"
+                data-network="base"
+                data-token-icon="https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png"
+                data-chain-icon="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png">
+                <div class="bridge-token-info">
+                  <div class="bridge-token-logo" style="--token-icon:url('https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png');">
+                    <div class="chain" style="--chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png');"></div>
+                  </div>
+                  <div>
+                    <div class="bridge-token-name">USDC</div>
+                    <div class="bridge-token-chain">Base</div>
+                  </div>
+                </div>
+                <div class="bridge-badge">0x...USDC</div>
+              </div>
+              <div class="bridge-token-item"
+                data-token="ETH"
+                data-network="ethereum"
+                data-token-icon="https://assets.coingecko.com/coins/images/279/large/ethereum.png"
+                data-chain-icon="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png">
+                <div class="bridge-token-info">
+                  <div class="bridge-token-logo" style="--token-icon:url('https://assets.coingecko.com/coins/images/279/large/ethereum.png');">
+                    <div class="chain" style="--chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png');"></div>
+                  </div>
+                  <div>
+                    <div class="bridge-token-name">ETH</div>
+                    <div class="bridge-token-chain">Ethereum</div>
+                  </div>
+                </div>
+                <div class="bridge-badge">0x...0030</div>
+              </div>
+              <div class="bridge-token-item"
+                data-token="USDC"
+                data-network="ethereum"
+                data-token-icon="https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png"
+                data-chain-icon="https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png">
+                <div class="bridge-token-info">
+                  <div class="bridge-token-logo" style="--token-icon:url('https://assets.coingecko.com/coins/images/6319/large/USD_Coin_icon.png');">
+                    <div class="chain" style="--chain-icon:url('https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/ethereum/info/logo.png');"></div>
+                  </div>
+                  <div>
+                    <div class="bridge-token-name">USDC</div>
+                    <div class="bridge-token-chain">Ethereum</div>
+                  </div>
+                </div>
+                <div class="bridge-badge">0x...USDC</div>
+              </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      `;
+      if (!document.getElementById('bridge-selector-style')) {
+        const styleEl = document.createElement('div');
+        styleEl.innerHTML = tpl;
+        document.body.insertAdjacentHTML('beforeend', tpl);
+      } else {
+        // Only overlay if style already exists
+        document.body.insertAdjacentHTML('beforeend', tpl.replace(/<style[\s\S]*?<\/style>/, ''));
+      }
+      overlay = document.getElementById('bridge-selector-overlay');
+      closeBtn = document.getElementById('bridge-selector-close');
+    }
+    if (!sellBtn || !overlay || !closeBtn) return;
+
+    const symbolEl = sellBtn.querySelector('[data-token-symbol]');
+    const chainEl = sellBtn.querySelector('[data-token-chain]');
+
+    const setSelection = (token, network, tokenIcon, chainIcon, label) => {
+      if (symbolEl) symbolEl.textContent = token;
+      if (chainEl) chainEl.textContent = label || network;
+      sellBtn.style.setProperty('--token-icon', `url('${tokenIcon}')`);
+      sellBtn.style.setProperty('--chain-icon', `url('${chainIcon}')`);
+    };
+
+    const openOverlay = () => overlay.classList.add('active');
+    const closeOverlay = () => overlay.classList.remove('active');
+
+    sellBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      openOverlay();
+    });
+
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeOverlay();
+    });
+
+    overlay.addEventListener('click', (e) => {
+      if (e.target === overlay) closeOverlay();
+    });
+
+    const filterTokens = (network) => {
+      overlay.querySelectorAll('.bridge-token-item').forEach(item => {
+        if (network === 'all' || item.dataset.network === network) {
+          item.style.display = 'flex';
+        } else {
+          item.style.display = 'none';
+        }
+      });
+    };
+
+    overlay.querySelectorAll('.bridge-network-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const net = item.dataset.network || 'all';
+        overlay.querySelectorAll('.bridge-network-item').forEach(n => n.classList.remove('active'));
+        item.classList.add('active');
+        filterTokens(net);
+      });
+    });
+
+    overlay.querySelectorAll('.bridge-token-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const token = item.dataset.token || 'ETH';
+        const network = item.dataset.network || 'base';
+        const tokenIcon = item.dataset.tokenIcon || 'https://assets.coingecko.com/coins/images/279/large/ethereum.png';
+        const chainIcon = item.dataset.chainIcon || 'https://raw.githubusercontent.com/trustwallet/assets/master/blockchains/base/info/logo.png';
+        const label = network === 'ethereum' ? 'Ethereum' : network.charAt(0).toUpperCase() + network.slice(1);
+        setSelection(token, network, tokenIcon, chainIcon, label);
+        closeOverlay();
+      });
+    });
+
+    // default view: show all
+    filterTokens('all');
   }
 
   close() {

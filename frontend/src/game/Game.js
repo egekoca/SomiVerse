@@ -38,7 +38,8 @@ import {
   generateLendingContent,
   generateMintContent,
   generateFaucetContent,
-  generateDomainContent
+  generateDomainContent,
+  generateBridgeContent
 } from '../components/ModalContent.js';
 
 // Config
@@ -333,7 +334,7 @@ export class Game {
       subtitle: 'CROSS-CHAIN BRIDGE',
       type: 'BRIDGE',
       builderFn: buildBridge,
-      contentGenerator: () => '<div>Bridge content coming soon...</div>'
+      contentGenerator: generateBridgeContent
     });
     scene.add(bridgeBuilding.getMesh());
     this.buildings.push(bridgeBuilding);
