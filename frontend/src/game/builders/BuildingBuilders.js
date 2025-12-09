@@ -587,9 +587,217 @@ export function buildGoldFaucet(group) {
   group.add(neonText);
 }
 
+// ==================== BRIDGE ====================
+export function buildBridge(group) {
+  // Brighter neon red tones
+  const neonRed = 0xff0022;
+  const neonRedBright = 0xff3355;
+  const darkBase = 0x1a0a0a; // Taban ve pylonlar koyu, neonlar kırmızı
+
+  // Rotate and scale bridge; ~45° around Y for stronger angle
+  group.rotation.y = -Math.PI / 4;
+  group.scale.set(0.70, 0.70, 0.70);
+
+  // Bridge deck (main platform)
+  const deckWidth = 22;
+  const deckLength = 140; // longer span
+  const deckHeight = 2;
+
+  const deck = new THREE.Mesh(
+    new THREE.BoxGeometry(deckWidth, deckHeight, deckLength),
+    new THREE.MeshLambertMaterial({ color: darkBase, fog: false })
+  );
+  deck.position.y = deckHeight / 2;
+  setAlwaysVisible(deck);
+  group.add(deck);
+
+  // Deck neon edges
+  const deckEdgeMat = new THREE.MeshBasicMaterial({ color: neonRed, fog: false });
+  const edgeThickness = 0.3;
+  const edgeHeight = deckHeight + 0.2;
+
+  const frontEdge = new THREE.Mesh(
+    new THREE.BoxGeometry(deckWidth, edgeThickness, edgeThickness),
+    deckEdgeMat
+  );
+  frontEdge.position.set(0, edgeHeight, deckLength / 2);
+  setAlwaysVisible(frontEdge);
+  group.add(frontEdge);
+
+  const backEdge = new THREE.Mesh(
+    new THREE.BoxGeometry(deckWidth, edgeThickness, edgeThickness),
+    deckEdgeMat
+  );
+  backEdge.position.set(0, edgeHeight, -deckLength / 2);
+  setAlwaysVisible(backEdge);
+  group.add(backEdge);
+
+  const leftEdge = new THREE.Mesh(
+    new THREE.BoxGeometry(edgeThickness, edgeThickness, deckLength),
+    deckEdgeMat
+  );
+  leftEdge.position.set(-deckWidth / 2, edgeHeight, 0);
+  setAlwaysVisible(leftEdge);
+  group.add(leftEdge);
+
+  const rightEdge = new THREE.Mesh(
+    new THREE.BoxGeometry(edgeThickness, edgeThickness, deckLength),
+    deckEdgeMat
+  );
+  rightEdge.position.set(deckWidth / 2, edgeHeight, 0);
+  setAlwaysVisible(rightEdge);
+  group.add(rightEdge);
+
+  // Two main pylons (towers) far apart along the span
+  const pylonHeight = 65;
+  const pylonWidth = 3.5;
+  const pylonDepth = 3.5;
+  const pylonZ = deckLength * 0.35; // place pylons closer to ends
+
+  const pylonMat = new THREE.MeshLambertMaterial({ color: darkBase, fog: false });
+  const neonLineMat = new THREE.MeshBasicMaterial({ color: neonRed, fog: false });
+  const topMat = new THREE.MeshBasicMaterial({ color: neonRedBright, fog: false });
+
+  function addPylon(zPos, flip = 1) {
+    const pylon = new THREE.Mesh(
+      new THREE.BoxGeometry(pylonWidth, pylonHeight, pylonDepth),
+      pylonMat
+    );
+    pylon.position.set(0, pylonHeight / 2, zPos * flip);
+    setAlwaysVisible(pylon);
+    group.add(pylon);
+
+    // Neon vertical lines
+    for (let i = 0; i < 4; i++) {
+      const line = new THREE.Mesh(
+        new THREE.BoxGeometry(0.25, pylonHeight, 0.25),
+        neonLineMat
+      );
+      const angle = (i / 4) * Math.PI * 2;
+      line.position.set(
+        Math.cos(angle) * 1.8,
+        pylonHeight / 2,
+        zPos * flip + Math.sin(angle) * 1.8
+      );
+      setAlwaysVisible(line);
+      group.add(line);
+    }
+
+    // Pylon top cap
+    const cap = new THREE.Mesh(
+      new THREE.BoxGeometry(pylonWidth + 1.2, 2.2, pylonDepth + 1.2),
+      topMat
+    );
+    cap.position.set(0, pylonHeight, zPos * flip);
+    setAlwaysVisible(cap);
+    group.add(cap);
+
+    return { x: 0, y: pylonHeight, z: zPos * flip };
+  }
+
+  const leftTop = addPylon(-pylonZ, 1);
+  const rightTop = addPylon(pylonZ, 1);
+
+  // Helper to create a smooth parabolic cable between two points
+  function createCable(start, end, sag, radius, material) {
+    const mid = new THREE.Vector3().addVectors(start, end).multiplyScalar(0.5);
+    mid.y -= sag;
+    const curve = new THREE.QuadraticBezierCurve3(
+      new THREE.Vector3(start.x, start.y, start.z),
+      mid,
+      new THREE.Vector3(end.x, end.y, end.z)
+    );
+    const geom = new THREE.TubeGeometry(curve, 64, radius, 8, false);
+    const mesh = new THREE.Mesh(geom, material);
+    setAlwaysVisible(mesh);
+    return mesh;
+  }
+
+  // Main suspension cables (top-to-top parabolic)
+  const mainCableMat = new THREE.MeshBasicMaterial({ color: neonRed, fog: false });
+  const mainSag = 18;
+  const leftToRightCable = createCable(
+    new THREE.Vector3(leftTop.x, leftTop.y, leftTop.z),
+    new THREE.Vector3(rightTop.x, rightTop.y, rightTop.z),
+    mainSag,
+    0.35,
+    mainCableMat
+  );
+  group.add(leftToRightCable);
+
+  // Vertical hangers from main cable to deck
+  const hangersCount = 18;
+  const deckY = edgeHeight;
+  for (let i = 1; i < hangersCount; i++) {
+    const t = i / hangersCount;
+    const pt = leftToRightCable.geometry.parameters.path.getPointAt(t);
+    const hangerHeight = pt.y - deckY;
+    if (hangerHeight <= 0) continue;
+    const hanger = new THREE.Mesh(
+      new THREE.BoxGeometry(0.18, hangerHeight, 0.18),
+      neonLineMat
+    );
+    hanger.position.set(pt.x, deckY + hangerHeight / 2, pt.z);
+    setAlwaysVisible(hanger);
+    group.add(hanger);
+  }
+
+  // Secondary side cables from pylon tops to deck corners (parabolic)
+  const sideSag = 10;
+  const deckEndZ = deckLength / 2;
+  const deckX = deckWidth / 2;
+  const sideCableMat = new THREE.MeshBasicMaterial({ color: neonRedBright, fog: false });
+
+  // Left pylon to left deck end
+  group.add(
+    createCable(
+      new THREE.Vector3(leftTop.x, leftTop.y, leftTop.z),
+      new THREE.Vector3(-deckX, deckY, -deckEndZ),
+      sideSag,
+      0.2,
+      sideCableMat
+    )
+  );
+  group.add(
+    createCable(
+      new THREE.Vector3(leftTop.x, leftTop.y, leftTop.z),
+      new THREE.Vector3(deckX, deckY, -deckEndZ),
+      sideSag,
+      0.2,
+      sideCableMat
+    )
+  );
+
+  // Right pylon to right deck end
+  group.add(
+    createCable(
+      new THREE.Vector3(rightTop.x, rightTop.y, rightTop.z),
+      new THREE.Vector3(deckX, deckY, deckEndZ),
+      sideSag,
+      0.2,
+      sideCableMat
+    )
+  );
+  group.add(
+    createCable(
+      new THREE.Vector3(rightTop.x, rightTop.y, rightTop.z),
+      new THREE.Vector3(-deckX, deckY, deckEndZ),
+      sideSag,
+      0.2,
+      sideCableMat
+    )
+  );
+
+  // Neon text above bridge
+  const neonText = createNeonText('BRIDGE', neonRed, pylonHeight + 8);
+  neonText.rotation.y = group.rotation.y; // match bridge angle
+  group.add(neonText);
+}
+
 export default {
   buildSwapCity,
   buildLendingTower,
   buildMintLab,
-  buildGoldFaucet
+  buildGoldFaucet,
+  buildBridge
 };

@@ -91,7 +91,7 @@ export class InteractionSystem {
     // Faucet (CLAIM), Swap (SWAP), and Lending (LEND) need wallet address
     let content;
     try {
-      if (building.type === 'CLAIM' || building.type === 'SWAP' || building.type === 'LEND' || building.type === 'DOMAIN') {
+      if (building.type === 'CLAIM' || building.type === 'SWAP' || building.type === 'LEND' || building.type === 'DOMAIN' || building.type === 'BRIDGE') {
         // Try to await (works for both sync and async functions)
         const result = building.contentGenerator(this.walletAddress);
         content = result instanceof Promise ? await result : result;

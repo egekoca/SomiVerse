@@ -37,6 +37,8 @@ export class ZoneManager {
     this.addZone(-dist, -dist, hubSize, hubSize);  // Sol üst - LEND
     this.addZone(dist, dist, hubSize, hubSize);    // Sağ alt - MINT
     this.addZone(-dist, dist, hubSize, hubSize);   // Sol alt - CLAIM
+    // Bridge - left of Lend building (aligned with Game.js)
+    this.addZone(-dist * 3.0, -dist * 1.0, hubSize, hubSize);
     // Somnia Domain Service - west of faucet (shifted further left)
     this.addZone(-dist * 2.5, dist, hubSize, hubSize);
 

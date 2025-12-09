@@ -28,7 +28,8 @@ import {
   buildLendingTower,
   buildMintLab,
   buildGoldFaucet,
-  buildDomainHub
+  buildDomainHub,
+  buildBridge
 } from './builders/BuildingBuilders.js';
 
 // Content
@@ -284,12 +285,15 @@ export class Game {
     // Add Main Building Colliders (Box 30x30)
     // These are slightly larger than meshes to prevent walking into base rings
     const mainColliderSize = 30;
+    const bridgeX = -dist * 3.0; // Left of Lend, not too close to edge
+    const bridgeZ = -dist * 1.0; // Align roughly with Lend's Z row
     this.physicsColliders.push(
       { x: dist, z: -dist, w: mainColliderSize, d: mainColliderSize }, // Swap
       { x: -dist, z: -dist, w: mainColliderSize, d: mainColliderSize }, // Lend
       { x: dist, z: dist, w: mainColliderSize, d: mainColliderSize }, // Mint
       { x: -dist, z: dist, w: mainColliderSize, d: mainColliderSize }, // Faucet
-      { x: domainX, z: domainZ, w: mainColliderSize, d: mainColliderSize } // Domain
+      { x: domainX, z: domainZ, w: mainColliderSize, d: mainColliderSize }, // Domain
+      { x: bridgeX, z: bridgeZ, w: mainColliderSize * 0.6, d: mainColliderSize * 0.6 } // Bridge (smaller collider)
     );
 
     // SWAP CITY
@@ -319,6 +323,20 @@ export class Game {
     });
     scene.add(lendingBuilding.getMesh());
     this.buildings.push(lendingBuilding);
+
+    // BRIDGE
+    const bridgeBuilding = new Building({
+      x: bridgeX,
+      z: bridgeZ,
+      color: 0xff0022, // Neon red (button/ring color)
+      title: 'BRIDGE',
+      subtitle: 'CROSS-CHAIN BRIDGE',
+      type: 'BRIDGE',
+      builderFn: buildBridge,
+      contentGenerator: () => '<div>Bridge content coming soon...</div>'
+    });
+    scene.add(bridgeBuilding.getMesh());
+    this.buildings.push(bridgeBuilding);
 
     // MINT LAB
     const mintBuilding = new Building({
