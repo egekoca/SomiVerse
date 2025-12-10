@@ -991,6 +991,12 @@ export async function generateDomainContent(walletAddress = null) {
         <div class="domain-cost">
           Registration cost: <strong>5 SOMI</strong>
         </div>
+        
+        ${isConnected ? `
+        <div class="domain-balance" style="text-align: center; margin-top: 10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7); font-family: 'Courier New', monospace;">
+          Your SOMI Balance: <strong id="domain-somi-balance" style="color: var(--theme-color, #aa00ff);">Loading...</strong>
+        </div>
+        ` : ''}
 
         <button 
           class="primary-btn domain-register-btn" 

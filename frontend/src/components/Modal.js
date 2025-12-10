@@ -2245,6 +2245,11 @@ export class Modal {
   async initDomainUI() {
     await domainService.init();
 
+    // Load SOMI balance
+    if (this.walletAddress) {
+      this.loadDomainSOMIBalance();
+    }
+
     // Tab switching
     const tabs = this.bodyEl.querySelectorAll('.domain-tab');
     tabs.forEach(tab => {
@@ -2280,6 +2285,34 @@ export class Modal {
       if (activeTab?.dataset.tab === 'management') {
         this.loadDomains();
       }
+    }
+  }
+
+  /**
+   * Load SOMI balance for domain registration
+   */
+  async loadDomainSOMIBalance() {
+    const balanceEl = this.bodyEl.querySelector('#domain-somi-balance');
+    if (!balanceEl) return;
+
+    try {
+      const balance = await BridgeService.getSOMIBalance();
+      const balanceNum = parseFloat(balance);
+      
+      if (balanceNum >= 1) {
+        balanceEl.textContent = `${balanceNum.toFixed(4)} SOMI`;
+        balanceEl.style.color = 'var(--theme-color, #aa00ff)';
+      } else if (balanceNum > 0) {
+        balanceEl.textContent = `${balanceNum.toFixed(6)} SOMI`;
+        balanceEl.style.color = 'var(--theme-color, #aa00ff)';
+      } else {
+        balanceEl.textContent = '0 SOMI';
+        balanceEl.style.color = '#ff0055';
+      }
+    } catch (error) {
+      console.error('Error loading SOMI balance:', error);
+      balanceEl.textContent = 'Error';
+      balanceEl.style.color = '#ff0055';
     }
   }
 
@@ -2385,9 +2418,12 @@ export class Modal {
         if (domainInput) domainInput.value = '';
         
         // Ensure domain is saved to storage
+        // Note: DomainService.register already saves to storage, but we ensure it here too
         if (result.domain) {
           console.log('Domain from result:', result.domain);
-          domainService.addDomainToStorage(this.walletAddress, result.domain);
+          // Ensure domain is a string before saving
+          const domainToSave = typeof result.domain === 'string' ? result.domain : String(result.domain);
+          domainService.addDomainToStorage(this.walletAddress, domainToSave);
         } else {
           console.log('No domain in result, using cleanName:', cleanName);
           domainService.addDomainToStorage(this.walletAddress, cleanName);

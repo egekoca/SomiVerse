@@ -92,21 +92,55 @@ export class DomainService {
       // Remove .somi if present and convert to lowercase
       const cleanName = domainName.replace(/\.somi$/i, '').toLowerCase();
       
-      // Try to get domain info - if owner is zero address, domain is available
+      if (!cleanName || cleanName.length === 0) {
+        return false;
+      }
+      
+      // Try to get domain info - domains() returns a tuple [owner, expiry]
       try {
         const domainInfo = await this.registryContract.domains(cleanName);
         const zeroAddress = '0x0000000000000000000000000000000000000000';
-        const isAvailable = !domainInfo.owner || domainInfo.owner.toLowerCase() === zeroAddress.toLowerCase();
-        return isAvailable;
-      } catch (domainError) {
-        // If domains() fails (domain doesn't exist), it's available
-        console.log('Domain check failed, assuming available:', domainError);
+        
+        // domainInfo is a tuple: [owner, expiry]
+        let owner;
+        if (Array.isArray(domainInfo) && domainInfo.length >= 2) {
+          owner = domainInfo[0];
+        } else if (domainInfo && domainInfo.owner) {
+          owner = domainInfo.owner;
+        } else {
+          // If we can't parse the structure, assume available
+          return true;
+        }
+        
+        // Check if owner is zero address
+        if (owner) {
+          const ownerStr = String(owner).toLowerCase();
+          const isZero = ownerStr === zeroAddress.toLowerCase() || ownerStr === '0x0' || ownerStr === '';
+          return isZero;
+        }
+        
+        // If no owner, assume available
         return true;
+      } catch (domainError) {
+        // If domains() call reverts, domain might not exist (available)
+        // But we need to be careful - if it's a real revert, domain might be taken
+        console.log('Domain check error:', domainError);
+        
+        // If it's a revert error, it could mean:
+        // 1. Domain doesn't exist (available) - but this shouldn't revert
+        // 2. Domain exists but contract has an issue
+        // To be safe, if it reverts, assume NOT available
+        if (domainError.message && domainError.message.includes('revert')) {
+          return false;
+        }
+        
+        // For other errors (network, etc.), assume not available to be safe
+        return false;
       }
     } catch (error) {
       console.error('DomainService isAvailable error:', error);
-      // If check fails, assume available (let registration try)
-      return true;
+      // If check fails, assume not available to be safe
+      return false;
     }
   }
 
@@ -236,7 +270,11 @@ export class DomainService {
           try {
             const parsed = iface.parseLog(log);
             if (parsed && parsed.name === 'Registered') {
-              registeredDomain = parsed.args.name;
+              // Ensure domain is a string
+              const domainFromEvent = parsed.args.name;
+              registeredDomain = typeof domainFromEvent === 'string' 
+                ? domainFromEvent 
+                : String(domainFromEvent);
               console.log('Found Registered event:', registeredDomain);
               break;
             }
@@ -246,6 +284,11 @@ export class DomainService {
         }
       } catch (e) {
         console.warn('Could not parse events:', e);
+      }
+      
+      // Ensure registeredDomain is always a string
+      if (typeof registeredDomain !== 'string') {
+        registeredDomain = String(registeredDomain);
       }
       
       console.log('Domain registered successfully:', receipt);
@@ -382,6 +425,12 @@ export class DomainService {
   addDomainToStorage(address, domain) {
     // Ensure address is lowercase
     const normalizedAddress = address.toLowerCase();
+    
+    // Ensure domain is a string
+    if (typeof domain !== 'string') {
+      domain = String(domain);
+    }
+    
     // Remove .somi if present
     const cleanDomain = domain.replace(/\.somi$/i, '');
     
