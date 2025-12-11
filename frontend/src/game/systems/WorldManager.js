@@ -169,7 +169,7 @@ export class WorldManager {
     this.buildings.push(domainBuilding);
   }
 
-  update(deltaTime) {
+  update(deltaTime, playerPosition = null) {
     // Update highway cars
     if (this.highways) {
       this.highways.update();
@@ -178,6 +178,11 @@ export class WorldManager {
     // Update billboards
     if (this.billboards) {
       this.billboards.update(deltaTime);
+    }
+
+    // Update huge billboards (texture rotation)
+    if (this.hugeBillboards && playerPosition) {
+      this.hugeBillboards.update(deltaTime, playerPosition);
     }
 
     // Update building animations

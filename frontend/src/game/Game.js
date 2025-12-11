@@ -271,8 +271,8 @@ export class Game {
     }
 
     // Update world (highways, billboards, buildings)
-    if (this.worldManager) {
-      this.worldManager.update(deltaTime);
+    if (this.worldManager && this.player) {
+      this.worldManager.update(deltaTime, this.player.getPosition());
     }
 
     // Check interactions
