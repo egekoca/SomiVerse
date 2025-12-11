@@ -85,11 +85,25 @@ export class Player {
 
     if (!text) return;
 
+    // Create temporary context to measure text width
+    const tempCanvas = document.createElement('canvas');
+    const tempContext = tempCanvas.getContext('2d');
+    tempContext.font = 'bold 60px "Orbitron", sans-serif';
+    
+    // Measure text width
+    const textMetrics = tempContext.measureText(text);
+    const textWidth = textMetrics.width;
+    
+    // Calculate canvas dimensions with padding
+    const padding = 40; // 20px padding on each side
+    const canvasWidth = Math.max(512, Math.ceil(textWidth) + padding); // Minimum 512px, or text width + padding
+    const canvasHeight = 128;
+    
     // Create canvas for text
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = 512;
-    canvas.height = 128;
+    canvas.width = canvasWidth;
+    canvas.height = canvasHeight;
 
     // Text style
     context.font = 'bold 60px "Orbitron", sans-serif';
@@ -101,8 +115,8 @@ export class Player {
     context.shadowBlur = 20;
     context.fillStyle = color;
     
-    // Draw text
-    context.fillText(text, 256, 64);
+    // Draw text centered in canvas
+    context.fillText(text, canvasWidth / 2, canvasHeight / 2);
 
     // Create sprite
     const texture = new THREE.CanvasTexture(canvas);
@@ -115,7 +129,13 @@ export class Player {
     
     this.nameLabel = new THREE.Sprite(material);
     this.nameLabel.position.set(0, 3.5, 0); // Above head
-    this.nameLabel.scale.set(2.75, 0.69, 1); // Aspect ratio of canvas (%10 bigger)
+    
+    // Scale sprite based on canvas aspect ratio
+    // Base scale: 2.75 width, 0.69 height (for 512x128 canvas)
+    // Adjust width scale proportionally to canvas width
+    const baseWidth = 512;
+    const widthScale = (canvasWidth / baseWidth) * 2.75;
+    this.nameLabel.scale.set(widthScale, 0.69, 1);
     
     this.mesh.add(this.nameLabel);
   }

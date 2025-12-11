@@ -1590,117 +1590,230 @@ export class Modal {
   }
 
   /**
-   * Show Full Screen XP Popup
+   * Show XP notification bar (bottom right)
    */
   showXPPopup(actionName, xpAmount) {
-    const popup = document.createElement('div');
-    popup.className = 'xp-popup';
-    popup.innerHTML = `
-      <div class="xp-popup-content">
-        <button class="xp-close-btn">×</button>
-        <div class="xp-header">MISSION ACCOMPLISHED</div>
-        <div class="xp-action">${actionName}</div>
-        <div class="xp-amount">+${xpAmount} <span class="xp-label">XP</span></div>
+    // Create notification container if it doesn't exist
+    let notificationContainer = document.getElementById('xp-notification-container');
+    if (!notificationContainer) {
+      notificationContainer = document.createElement('div');
+      notificationContainer.id = 'xp-notification-container';
+      notificationContainer.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      `;
+      document.body.appendChild(notificationContainer);
+    }
+
+    // Create notification bar
+    const notification = document.createElement('div');
+    notification.className = 'xp-notification-bar';
+    notification.innerHTML = `
+      <div class="xp-notification-content">
+        <div class="xp-notification-icon">+</div>
+        <div class="xp-notification-text">
+          <div class="xp-notification-action">${actionName}</div>
+          <div class="xp-notification-amount">+${xpAmount} XP</div>
+        </div>
       </div>
     `;
-    document.body.appendChild(popup);
-    
-    // Add styles dynamically if not present
-    if (!document.getElementById('xp-popup-style')) {
+
+    // Add styles if not present
+    if (!document.getElementById('xp-notification-style')) {
       const style = document.createElement('style');
-      style.id = 'xp-popup-style';
+      style.id = 'xp-notification-style';
       style.textContent = `
-        .xp-popup {
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
-          z-index: 2000;
-          background: rgba(0,0,0,0.7);
-          animation: fadeIn 0.3s forwards;
-        }
-        .xp-popup-content {
-          position: relative;
+        .xp-notification-bar {
           background: rgba(10, 10, 20, 0.95);
           border: 2px solid var(--theme-color, #00ffcc);
-          padding: 30px 50px;
-          text-align: center;
-          border-radius: 10px;
-          box-shadow: 0 0 30px rgba(var(--theme-rgb), 0, 255, 204), 0.5);
-          transform: scale(0.8);
-          animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-        }
-        .xp-close-btn {
-          position: absolute;
-          top: 10px;
-          right: 10px;
-          background: transparent;
-          border: none;
-          color: rgba(255, 255, 255, 0.5);
-          font-size: 1.5em;
-          cursor: pointer;
-          transition: color 0.2s;
-          line-height: 1;
-          padding: 0 5px;
-        }
-        .xp-close-btn:hover {
-          color: #fff;
-        }
-        .xp-header {
-          color: #fff;
+          border-left: 4px solid var(--theme-color, #00ffcc);
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5), 0 0 20px rgba(0, 255, 204, 0.3);
+          min-width: 250px;
+          max-width: 350px;
+          pointer-events: auto;
+          animation: slideInRight 0.3s ease-out forwards;
           font-family: 'Courier New', monospace;
-          font-size: 1.2em;
-          margin-bottom: 10px;
-          letter-spacing: 2px;
         }
-        .xp-action {
+        .xp-notification-content {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        .xp-notification-icon {
+          font-size: 2em;
           color: var(--theme-color, #00ffcc);
-          font-size: 1.5em;
           font-weight: bold;
-          margin-bottom: 15px;
-          text-transform: uppercase;
+          line-height: 1;
         }
-        .xp-amount {
-          font-size: 3em;
+        .xp-notification-text {
+          flex: 1;
+        }
+        .xp-notification-action {
           color: #fff;
+          font-size: 0.9em;
+          text-transform: uppercase;
+          letter-spacing: 1px;
+          margin-bottom: 4px;
+        }
+        .xp-notification-amount {
+          color: var(--theme-color, #00ffcc);
+          font-size: 1.3em;
           font-weight: bold;
-          text-shadow: 0 0 10px rgba(255,255,255,0.5);
         }
-        .xp-label {
-          font-size: 0.4em;
-          color: #888;
+        @keyframes slideInRight {
+          from {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+          to {
+            transform: translateX(0);
+            opacity: 1;
+          }
         }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes popIn { from { transform: scale(0.5); } to { transform: scale(1); } }
-        @keyframes fadeOut { from { opacity: 1; } to { opacity: 0; } }
+        @keyframes slideOutRight {
+          from {
+            transform: translateX(0);
+            opacity: 1;
+          }
+          to {
+            transform: translateX(400px);
+            opacity: 0;
+          }
+        }
       `;
       document.head.appendChild(style);
     }
 
-    // Close handler
-    const closeBtn = popup.querySelector('.xp-close-btn');
-    const removePopup = () => {
-      if (popup.parentNode) {
-        popup.style.animation = 'fadeOut 0.3s forwards';
-        setTimeout(() => {
-          if (popup.parentNode) popup.parentNode.removeChild(popup);
-        }, 300);
-      }
+    notificationContainer.appendChild(notification);
+
+    // Auto-remove after 4 seconds
+    setTimeout(() => {
+      notification.style.animation = 'slideOutRight 0.3s ease-out forwards';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, 4000);
+  }
+
+  /**
+   * Show notification bar (for domain warnings, etc.)
+   */
+  showNotificationBar(message, type = 'info', duration = 5000) {
+    // Create notification container if it doesn't exist
+    let notificationContainer = document.getElementById('xp-notification-container');
+    if (!notificationContainer) {
+      notificationContainer = document.createElement('div');
+      notificationContainer.id = 'xp-notification-container';
+      notificationContainer.style.cssText = `
+        position: fixed;
+        bottom: 20px;
+        right: 20px;
+        z-index: 2000;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        pointer-events: none;
+      `;
+      document.body.appendChild(notificationContainer);
+    }
+
+    // Create notification bar
+    const notification = document.createElement('div');
+    notification.className = 'notification-bar';
+    notification.setAttribute('data-type', type);
+    
+    const iconMap = {
+      'info': 'ℹ',
+      'warning': '⚠',
+      'success': '✓',
+      'error': '✕'
+    };
+    
+    const colorMap = {
+      'info': '#00aaff',
+      'warning': '#ffaa00',
+      'success': '#00ffaa',
+      'error': '#ff0055'
     };
 
-    closeBtn.addEventListener('click', removePopup);
-    
-    // Allow closing by clicking outside content
-    popup.addEventListener('click', (e) => {
-      if (e.target === popup) removePopup();
-    });
+    notification.innerHTML = `
+      <div class="notification-content">
+        <div class="notification-icon" style="color: ${colorMap[type] || colorMap.info};">${iconMap[type] || iconMap.info}</div>
+        <div class="notification-text">${message}</div>
+      </div>
+    `;
 
-    // Auto-remove after animation (increased delay to allow reading)
-    setTimeout(removePopup, 3000);
+    // Add styles if not present
+    if (!document.getElementById('notification-bar-style')) {
+      const style = document.createElement('style');
+      style.id = 'notification-bar-style';
+      style.textContent = `
+        .notification-bar {
+          background: rgba(10, 10, 20, 0.95);
+          border: 2px solid;
+          border-left: 4px solid;
+          padding: 15px 20px;
+          border-radius: 8px;
+          box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+          min-width: 250px;
+          max-width: 400px;
+          pointer-events: auto;
+          animation: slideInRight 0.3s ease-out forwards;
+          font-family: 'Courier New', monospace;
+        }
+        .notification-bar[data-type="info"] {
+          border-color: #00aaff;
+        }
+        .notification-bar[data-type="warning"] {
+          border-color: #ffaa00;
+        }
+        .notification-bar[data-type="success"] {
+          border-color: #00ffaa;
+        }
+        .notification-bar[data-type="error"] {
+          border-color: #ff0055;
+        }
+        .notification-content {
+          display: flex;
+          align-items: center;
+          gap: 15px;
+        }
+        .notification-icon {
+          font-size: 1.5em;
+          font-weight: bold;
+          line-height: 1;
+        }
+        .notification-text {
+          flex: 1;
+          color: #fff;
+          font-size: 0.95em;
+          line-height: 1.4;
+        }
+      `;
+      document.head.appendChild(style);
+    }
+
+    notificationContainer.appendChild(notification);
+
+    // Auto-remove after duration
+    setTimeout(() => {
+      notification.style.animation = 'slideOutRight 0.3s ease-out forwards';
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 300);
+    }, duration);
   }
 
   /**
@@ -2422,6 +2535,15 @@ export class Modal {
       if (result.success) {
         this.showXPPopup('DOMAIN REGISTERED', 100);
         this.showMessage(`Domain ${cleanName}.somi registered successfully!`, 'success');
+        
+        // Show notification about setting primary domain
+        setTimeout(() => {
+          this.showNotificationBar(
+            'Domain registered! Go to Domain Management tab and click "Set Primary" to use it as your display name.',
+            'warning',
+            8000
+          );
+        }, 1000);
         
         // Clear input
         if (domainInput) domainInput.value = '';
