@@ -612,7 +612,10 @@ export function generateLendingContent(walletAddress = null) {
 export function generateMintContent() {
   return `
     <div class="nft-preview">
-      <div class="nft-preview-box">?</div>
+      <div class="nft-preview-box" style="
+        background: url('/Somi.png') center/cover no-repeat;
+        color: transparent;
+      " aria-label="SomiVerse NFT Preview"></div>
       <div class="nft-preview-label">PREVIEW</div>
     </div>
     <div class="defi-row">
