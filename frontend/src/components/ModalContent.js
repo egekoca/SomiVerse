@@ -288,7 +288,7 @@ export async function generateSwapContent(walletAddress = null) {
         </div>
         <div class="swap-amount-row">
           <div class="swap-amount-top">
-            <div class="swap-amount-input" id="to-amount" style="pointer-events: none; opacity: 0.7;">0</div>
+            <div class="swap-amount-input" id="to-amount" style="pointer-events: none; opacity: 0.7; font-size: 2.2em; font-weight: 700; color: #fff; font-family: 'Courier New', monospace;">0</div>
           </div>
         </div>
       </div>
@@ -310,6 +310,11 @@ export async function generateSwapContent(walletAddress = null) {
           <span>XP Reward</span>
           <span class="text-neon">+${settings.xpReward} XP</span>
         </div>
+      </div>
+
+      <div style="background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 4px; margin-bottom: 10px; text-align: center; border: 1px solid rgba(var(--theme-rgb), 0.3);">
+        <div style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">XP Reward</div>
+        <div style="font-size: 1.2em; color: var(--theme-color); font-weight: bold; font-family: 'Courier New', monospace;">+${settings.xpReward} XP</div>
       </div>
 
       <button class="primary-btn swap-btn" id="swap-btn" data-action="swap" ${buttonDisabled}>
@@ -517,6 +522,11 @@ export function generateLendingContent(walletAddress = null) {
           </div>
         </div>
 
+        <div style="background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 4px; margin-top: 15px; text-align: center; border: 1px solid rgba(var(--theme-rgb), 0.3);">
+          <div style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">XP Reward</div>
+          <div style="font-size: 1.2em; color: var(--theme-color, #00ffcc); font-weight: bold; font-family: 'Courier New', monospace;">+${settings.xpReward} XP</div>
+        </div>
+
       <div class="action-buttons" style="margin-top: 20px;">
         <button class="primary-btn action-btn" id="deposit-btn" data-action="deposit" ${isConnected ? '' : 'disabled'} style="width: 100%; padding: 15px; font-size: 1em;">
           <span class="btn-text">${isConnected ? 'SUPPLY LIQUIDITY' : 'ENTER AMOUNT'}</span>
@@ -555,6 +565,11 @@ export function generateLendingContent(walletAddress = null) {
               <span id="available-liquidity" style="color: #fff;">--</span>
             </div>
           </div>
+        </div>
+
+        <div style="background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 4px; margin-top: 15px; text-align: center; border: 1px solid rgba(var(--theme-rgb), 0.3);">
+          <div style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">XP Reward</div>
+          <div style="font-size: 1.2em; color: var(--theme-color, #00ffcc); font-weight: bold; font-family: 'Courier New', monospace;">+${Math.floor(settings.xpReward * 0.67)} XP</div>
         </div>
 
         <div class="action-buttons" style="margin-top: 20px;">
@@ -625,6 +640,10 @@ export function generateMintContent() {
     <div class="defi-row">
       <span class="defi-label">PRICE</span>
       <span class="defi-value">0.05 ETH</span>
+    </div>
+    <div style="background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 4px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(0, 255, 170, 0.3);">
+      <div style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">XP Reward</div>
+      <div style="font-size: 1.2em; color: #00ffaa; font-weight: bold; font-family: 'Courier New', monospace;">+150 XP</div>
     </div>
     <button class="primary-btn" data-action="mint">MINT NFT</button>
   `;
@@ -995,6 +1014,11 @@ export async function generateDomainContent(walletAddress = null) {
           Registration cost: <strong>5 SOMI</strong>
         </div>
         
+        <div style="background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 4px; margin-top: 15px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(var(--theme-rgb), 0.3);">
+          <div style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">XP Reward</div>
+          <div style="font-size: 1.2em; color: var(--theme-color, #aa00ff); font-weight: bold; font-family: 'Courier New', monospace;">+100 XP</div>
+        </div>
+        
         ${isConnected ? `
         <div class="domain-balance" style="text-align: center; margin-top: 10px; font-size: 0.9em; color: rgba(255, 255, 255, 0.7); font-family: 'Courier New', monospace;">
           Your SOMI Balance: <strong id="domain-somi-balance" style="color: var(--theme-color, #aa00ff);">Loading...</strong>
@@ -1018,6 +1042,20 @@ export async function generateDomainContent(walletAddress = null) {
           <button class="domain-refresh-btn" id="domain-refresh-btn" data-action="domain-refresh">
             ↻ Refresh
           </button>
+        </div>
+
+        <div style="background: rgba(0, 0, 0, 0.2); padding: 10px; border-radius: 4px; margin-bottom: 15px; text-align: center; border: 1px solid rgba(var(--theme-rgb), 0.3);">
+          <div style="font-size: 0.85em; color: rgba(255, 255, 255, 0.7); margin-bottom: 4px;">XP Rewards</div>
+          <div style="display: flex; justify-content: space-around; gap: 15px; font-size: 0.9em;">
+            <div>
+              <div style="color: rgba(255, 255, 255, 0.6); margin-bottom: 2px;">Set Primary</div>
+              <div style="color: var(--theme-color, #aa00ff); font-weight: bold; font-family: 'Courier New', monospace;">+50 XP</div>
+            </div>
+            <div>
+              <div style="color: rgba(255, 255, 255, 0.6); margin-bottom: 2px;">Renew Domain</div>
+              <div style="color: var(--theme-color, #aa00ff); font-weight: bold; font-family: 'Courier New', monospace;">+75 XP</div>
+            </div>
+          </div>
         </div>
 
         <div id="domain-primary-section" style="display: none; background: rgba(0,0,0,0.4); padding: 18px; border-radius: 8px; margin-bottom: 20px; border: 1px solid rgba(var(--theme-rgb), 0.4);">

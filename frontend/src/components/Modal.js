@@ -1396,12 +1396,13 @@ export class Modal {
       
       // Check if this is a wrapping/unwrapping operation (Mainnet)
       if ((fromToken === 'SOMI' && toToken === 'WSOMI') || (fromToken === 'WSOMI' && toToken === 'SOMI')) {
-        // 1:1 wrapping/unwrapping
+        // 1:1 wrapping/unwrapping - output is same as input
+        const inputAmountNum = parseFloat(amount);
         quote = {
           fromToken,
           toToken,
           inputAmount: amount,
-          outputAmount: amount, // 1:1 rate
+          outputAmount: inputAmountNum.toFixed(4), // 1:1 rate, format to 4 decimals
           rate: '1.0',
           priceImpact: '< 0.01%',
           fee: '0',
@@ -1414,7 +1415,15 @@ export class Modal {
 
       // Update output amount
       if (toAmountInput) {
-        toAmountInput.value = quote.outputAmount;
+        // Format output amount properly (1:1 wrap/unwrap should show same value)
+        const outputAmount = parseFloat(quote.outputAmount || 0);
+        // to-amount is a div, not input, so use textContent
+        toAmountInput.textContent = outputAmount > 0 ? parseFloat(outputAmount).toFixed(4) : '0';
+      }
+
+      // Show quote details
+      if (quoteInfo) {
+        quoteInfo.classList.remove('hidden');
       }
 
       // Update quote details
@@ -1431,7 +1440,7 @@ export class Modal {
       }
       if (impactEl) impactEl.textContent = quote.priceImpact;
       if (feeEl) {
-        if (fromToken === 'SOMI' || fromToken === 'WSOMI') {
+        if ((fromToken === 'SOMI' && toToken === 'WSOMI') || (fromToken === 'WSOMI' && toToken === 'SOMI')) {
           feeEl.textContent = 'Network fee only';
         } else {
           feeEl.textContent = `${quote.fee} ${fromToken}`;
