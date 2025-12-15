@@ -2479,29 +2479,9 @@ export class Modal {
       return;
     }
 
-    statusEl.className = 'domain-status checking';
-    statusEl.textContent = 'Checking availability...';
-    statusEl.style.display = 'block';
-    registerBtn.disabled = true;
-
-    try {
-      const available = await domainService.isAvailable(cleanName);
-      
-      if (available) {
-        statusEl.className = 'domain-status available';
-        statusEl.textContent = `${cleanName}.somi is available!`;
-        registerBtn.disabled = false;
-      } else {
-        statusEl.className = 'domain-status unavailable';
-        statusEl.textContent = `${cleanName}.somi is not available`;
-        registerBtn.disabled = true;
-      }
-    } catch (error) {
-      console.error('Domain availability check error:', error);
-      statusEl.className = 'domain-status unavailable';
-      statusEl.textContent = 'Error checking availability';
-      registerBtn.disabled = true;
-    }
+    // Geçici olarak availability mesajını gizle, butonu aç
+    statusEl.style.display = 'none';
+    registerBtn.disabled = false;
   }
 
   /**
